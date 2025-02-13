@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(SimplePhysicsEngineJniDriver)
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+project(SimplePhysicsEngineJniDriver C)
+
 set(JAVA_HOME "/home/brahvim/Programs/java/jdk-17.0.7+7/")
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-stack-protector -z noexecstack")
 
 include_directories(
 	${JAVA_HOME}/include
 	${JAVA_HOME}/include/linux
-	${CMAKE_SOURCE_DIR}/../include/
 )
 
 # Build JNI headers before build:
@@ -31,6 +30,9 @@ add_library(
 	SHARED
 	"jni.c"
 )
+
+# Links against engine:
+target_link_libraries(SimplePhysicsEngineJniDriver PRIVATE SimplePhysicsEngine)
 
 # Run this script post-build to inject the generated library into the Java project:
 add_custom_command(
