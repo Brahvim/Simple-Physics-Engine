@@ -1,3 +1,6 @@
-. ../env.sh
+. ../../env.sh
+
+cp ../*SimplePhysicsEngine* $PJAVA/
 cp ./*SimplePhysicsEngine* $PJAVA/
-echo "\`$0\` run successfully."
+
+echo "\`$(basename $0)\` run successfully."
