@@ -1,0 +1,19 @@
+{
+	"cSpell.words": [
+		"javainject",
+		"jnigen",
+		"noexecstack",
+		"PJAVA"
+	],
+	"files.associations": {
+		"*.s": "asm-intel-x86-generic",
+		"*.asm": "asm-intel-x86-generic",
+		"*.luac": "lua",
+		"com_brahvim_physics_engine.h": "c",
+		"immintrin.h": "c",
+		"avxintrin.h": "c"
+	},
+	"C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+	"cmake.sourceDirectory": "/home/brahvim/Code/C/SimplePhysicsEngine",
+	"sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
+}

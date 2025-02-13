@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "defines": [],
+            "name": "Linux",
+            "includePath": [
+                "${default}",
+                "/home/brahvim/Programs/java/jdk-17.0.7+7/include/**"
+            ],
+            "cStandard": "c23",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "${default}"
+        }
+    ],
+    "version": 4
+}
