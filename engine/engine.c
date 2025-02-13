@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include "../include/engine/engine.h"
+#include "engine/engine.h"
 
 unsigned long long g_physicsBodyDefaultAllocationCount = 0;
 

@@ -8,4 +8,5 @@ include_directories(
 )
 
 add_subdirectory("engine")
-add_subdirectory("jni-driver")
+add_subdirectory("engine-test")
+add_subdirectory("jni-connector")
