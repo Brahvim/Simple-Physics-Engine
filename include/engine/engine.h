@@ -1,22 +1,22 @@
 #pragma once
 
-typedef unsigned long long physics_body_t;
-typedef unsigned long long physics_error_t;
+typedef unsigned long long sp_body_t;
+typedef unsigned long long sp_error_t;
 
 #define PHYSICS_ERROR_NONE 					1 << 0
 #define PHYSICS_ERROR_OBJECT_NULL			1 << 1
 #define PHYSICS_ERROR_OBJECT_ABSENT			1 << 2
 #define PHYSICS_ERROR_OUT_OF_MEMORY			1 << 4
 
-struct PhysicsVec3 {
+struct SpVec3 {
 
 	float x, y, z;
 
 };
 
-struct PhysicsContextBody {
+struct SpContextBody {
 
-	struct PhysicsManagerBodyTranslation {
+	struct SpManagerBodyTranslation {
 
 		unsigned long long capacityActive;
 		unsigned long long capacityFreed;
@@ -26,7 +26,7 @@ struct PhysicsContextBody {
 		unsigned long long *active;
 		unsigned long long *freed;
 
-		struct PhysicsVec3 *data; // AoS with `(pos, vel, acc)` tuples.
+		struct SpVec3 *data; // AoS with `(pos, vel, acc)` tuples.
 
 	} *manTrans;
 	unsigned long long capacityMasses;
@@ -35,41 +35,41 @@ struct PhysicsContextBody {
 
 };
 
-struct PhysicsResultFloat {
+struct SpResultFloat {
 
 	char bad;
 
-	union PhysicsUnionErrorFloat {
+	union SpUnionErrorFloat {
 
 		float *value;
-		physics_error_t error;
+		sp_error_t error;
 
 	} result;
 
 
 };
 
-struct PhysicsResultPointer {
+struct SpResultPointer {
 
 	char bad;
 
-	union PhysicsUnionErrorPointer {
+	union SpUnionErrorPointer {
 
 		void *value;
-		physics_error_t error;
+		sp_error_t error;
 
 	} result;
 
 
 };
 
-struct PhysicsResultIntegerSigned {
+struct SpResultIntegerSigned {
 
 	char bad;
 
-	union PhysicsUnionErrorIntegerSigned {
+	union SpUnionErrorIntegerSigned {
 
-		physics_error_t error;
+		sp_error_t error;
 		signed long long value;
 
 	} result;
@@ -77,13 +77,13 @@ struct PhysicsResultIntegerSigned {
 
 };
 
-struct PhysicsResultIntegerUnsigned {
+struct SpResultIntegerUnsigned {
 
 	char bad;
 
-	union PhysicsUnionErrorUll {
+	union SpUnionErrorUll {
 
-		physics_error_t error;
+		sp_error_t error;
 		unsigned long long value;
 
 	} result;
@@ -91,20 +91,20 @@ struct PhysicsResultIntegerUnsigned {
 
 };
 
-extern unsigned long long g_physicsBodyDefaultAllocationCount;
+extern unsigned long long g_spBodyDefaultAllocationCount;
 
-struct PhysicsResultPointer physicsContextBodyAlloc();
-physics_error_t physicsContextBodyFree(struct PhysicsContextBody *ctx);
+struct SpResultPointer spContextBodyAlloc();
+sp_error_t spContextBodyFree(struct SpContextBody *ctx);
 
-// void physicsBodyForceCenter();
+// void spBodyForceCenter();
 
-struct PhysicsResultIntegerUnsigned physicsBodyCreate(struct PhysicsContextBody *ctx);
-physics_error_t physicsBodyDestroy(struct PhysicsContextBody *ctx, physics_body_t body);
+struct SpResultIntegerUnsigned spBodyCreate(struct SpContextBody *ctx);
+sp_error_t spBodyDestroy(struct SpContextBody *ctx, sp_body_t body);
 
-void physicsSolverTranslationEuler(struct PhysicsManagerBodyTranslation *man, float dt);
-void physicsSolverTranslationVerlet(struct PhysicsManagerBodyTranslation *man, float dt);
+void spSolverTranslationEuler(struct SpManagerBodyTranslation *man, float dt);
+void spSolverTranslationVerlet(struct SpManagerBodyTranslation *man, float dt);
 
-struct PhysicsResultPointer physicsManagerBodyTranslationAlloc();
-physics_error_t physicsManagerBodyTranslationFree(struct PhysicsManagerBodyTranslation* man);
-physics_error_t physicsManagerBodyTranslationCreateEntry(struct PhysicsManagerBodyTranslation* man, physics_body_t body);
-physics_error_t physicsManagerBodyTranslationDestroyEntry(struct PhysicsManagerBodyTranslation* man, physics_body_t body);
+struct SpResultPointer spManagerBodyTranslationAlloc();
+sp_error_t spManagerBodyTranslationFree(struct SpManagerBodyTranslation* man);
+sp_error_t spManagerBodyTranslationCreateEntry(struct SpManagerBodyTranslation* man, sp_body_t body);
+sp_error_t spManagerBodyTranslationDestroyEntry(struct SpManagerBodyTranslation* man, sp_body_t body);

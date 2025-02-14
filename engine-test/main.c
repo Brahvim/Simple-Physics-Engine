@@ -6,14 +6,14 @@
 #define ITR 10000
 
 int main(int argc, char const *argv[]) {
-	puts("Allocating `PhysicsManagerBodyTranslation`.");
+	puts("Allocating `SpManagerBodyTranslation`.");
 
-	physics_body_t *bodies = malloc(ITR * sizeof(physics_body_t));
-	struct PhysicsContextBody *ctx = physicsContextBodyAlloc().result.value;
+	sp_body_t *bodies = malloc(ITR * sizeof(sp_body_t));
+	struct SpContextBody *ctx = spContextBodyAlloc().result.value;
 
 	for (size_t i = 0; i < ITR; ++i) {
 
-		bodies[i] = physicsBodyCreate(ctx).result.value;
+		bodies[i] = spBodyCreate(ctx).result.value;
 
 	}
 
@@ -21,27 +21,27 @@ int main(int argc, char const *argv[]) {
 
 		if (i % 3 == 0) {
 
-			struct PhysicsVec3 *pos = &ctx->manTrans->data[i];
-			struct PhysicsVec3 *vel = pos + 1;
-			struct PhysicsVec3 *acc = vel + 1;
+			struct SpVec3 *pos = &ctx->manTrans->data[i];
+			struct SpVec3 *vel = pos + 1;
+			struct SpVec3 *acc = vel + 1;
 
 			vel->x += rand();
 			acc->y += 0.01f;
 
 		}
 
-		physicsSolverTranslationEuler(ctx->manTrans, 0.01f);
+		spSolverTranslationEuler(ctx->manTrans, 0.01f);
 
 	}
 
 	for (size_t i = 0; i < ITR; ++i) {
 
-		physicsBodyDestroy(ctx, bodies[i]);
+		spBodyDestroy(ctx, bodies[i]);
 
 	}
 
-	puts("Freeing `PhysicsManagerBodyTranslation`.");
-	physicsContextBodyFree(ctx);
+	puts("Freeing `SpManagerBodyTranslation`.");
+	spContextBodyFree(ctx);
 	free(bodies);
 
 	return 0;
