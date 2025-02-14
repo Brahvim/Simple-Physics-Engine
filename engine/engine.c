@@ -30,26 +30,30 @@ void spSolverTranslationEuler(struct SpManagerBodyTranslation *p_man, float p_dt
 }
 
 void spSolverTranslationVerlet(struct SpManagerBodyTranslation *p_man, float p_dt) {
-	for (unsigned long long i = 0; i < 3 * p_man->capacityActive; i += 3) {
+	float dt2 = p_dt * p_dt; // Squared delta time
 
+	for (unsigned long long i = 0; i < 3 * p_man->capacityActive; i += 3) {
 		struct SpVec3 *pos = p_man->data + i;
 		struct SpVec3 *vel = pos + 1;
 		struct SpVec3 *acc = vel + 1;
 
-		pos->x += vel->x * p_dt + (acc->x * 0.5f) * p_dt * p_dt;
-		pos->y += vel->y * p_dt + (acc->y * 0.5f) * p_dt * p_dt;
-		pos->z += vel->z * p_dt + (acc->z * 0.5f) * p_dt * p_dt;
+		struct SpVec3 prev_pos = *pos; // Save current position
 
-		vel->x += acc->x * p_dt;
-		vel->y += acc->y * p_dt;
-		vel->z += acc->z * p_dt;
+		// Update position using Verlet
+		pos->x = 2 * pos->x - vel->x + acc->x * dt2;
+		pos->y = 2 * pos->y - vel->y + acc->y * dt2;
+		pos->z = 2 * pos->z - vel->z + acc->z * dt2;
 
-		acc->x = 0;
-		acc->y = 0;
-		acc->z = 0;
+		// Approximate velocity (if needed for constraints)
+		vel->x = (pos->x - prev_pos.x) / p_dt;
+		vel->y = (pos->y - prev_pos.y) / p_dt;
+		vel->z = (pos->z - prev_pos.z) / p_dt;
 
+		// Reset acceleration
+		acc->x = acc->y = acc->z = 0;
 	}
 }
+
 #pragma endregion
 
 #pragma region `struct SpContextBody`.
@@ -62,12 +66,12 @@ struct SpResultPointer spContextBodyAlloc() {
 
 	}
 
-	// ctx->masses = calloc(g_spBodyDefaultAllocationCount, sizeof(float));
+	ctx->masses = calloc(g_spBodyDefaultAllocationCount, sizeof(float));
 	ctx->manTrans = spManagerBodyTranslationAlloc().result.value; // NOLINT clang-analyzer.unix.Malloc
 	ctx->capacityMasses = g_spBodyDefaultAllocationCount;
 	ctx->maxId = 0;
 
-	return (struct SpResultPointer) { .bad = 0, .result.value = ctx }; // cppcheck-suppress unmatchedSuppression
+	return (struct SpResultPointer) { .bad = 0, .result.value = ctx }; // cppcheck-suppress memleak
 }
 
 sp_error_t spContextBodyFree(struct SpContextBody *p_ctx) {
@@ -78,7 +82,7 @@ sp_error_t spContextBodyFree(struct SpContextBody *p_ctx) {
 	}
 
 	spManagerBodyTranslationFree(p_ctx->manTrans);
-	// free(p_ctx->masses);
+	free(p_ctx->masses);
 	free(p_ctx);
 
 	return PHYSICS_ERROR_NONE;
@@ -99,27 +103,25 @@ struct SpResultIntegerUnsigned spBodyCreate(struct SpContextBody *p_ctx) {
 
 		}
 
-		// float *masses = realloc(p_ctx->masses, 2 * sizeof(float) * p_ctx->capacityMasses);
-		//
-		// if (!masses) {
-		//
-		// return (struct SpResultIntegerUnsigned) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-		//
-		// }
-		//
-		// p_ctx->masses = masses;
-		// p_ctx->capacityMasses *= 2;
+		unsigned long long cap = 2 * p_ctx->capacityMasses;
+		float *masses = realloc(p_ctx->masses, cap * sizeof(float));
+
+		if (!masses) {
+
+			return (struct SpResultIntegerUnsigned) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
+
+		}
+
+		// "Doin' what `realloc()` don't!":
+		// memset(masses + p_ctx->capacityMasses, 0, sizeof(float) * (cap - p_ctx->capacityMasses));
+
+		p_ctx->masses = masses;
+		p_ctx->capacityMasses = cap;
 
 	}
 
-	// if (id >= p_ctx->capacityMasses) {
-	//
-	// puts("BUG!");
-	//
-	// }
-
 	p_ctx->maxId++;
-	// p_ctx->masses[id] = 0;
+	p_ctx->masses[id] = 0;
 	return (struct SpResultIntegerUnsigned) { .bad = 0, .result.value = id };
 }
 

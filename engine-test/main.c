@@ -3,7 +3,7 @@
 
 #include "engine/engine.h"
 
-#define ITR 10000
+#define ITR 100
 
 int main(int argc, char const *argv[]) {
 	puts("Allocating `SpManagerBodyTranslation`.");
@@ -30,7 +30,7 @@ int main(int argc, char const *argv[]) {
 
 		}
 
-		spSolverTranslationEuler(ctx->manTrans, 0.01f);
+		spSolverTranslationVerlet(ctx->manTrans, 0.01f);
 
 	}
 
