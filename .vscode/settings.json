@@ -1,7 +1,15 @@
 {
 	"cSpell.words": [
+		"ffast",
+		"fopt",
+		"fsanitize",
+		"ftree",
+		"funroll",
 		"javainject",
 		"jnigen",
+		"masm",
+		"mavx",
+		"mprefer",
 		"noexecstack",
 		"PJAVA"
 	],

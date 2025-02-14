@@ -1,27 +1,48 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "engine/engine.h"
 
-#define ITR 1000000
+#define ITR 10000
 
 int main(int argc, char const *argv[]) {
 	puts("Allocating `PhysicsManagerBodyTranslation`.");
-	struct PhysicsManagerBodyTranslation *man = physicsManagerBodyTranslationAlloc();
 
-	for (size_t i = 0; i < ITR; i++) {
+	physics_body_t *bodies = malloc(ITR * sizeof(physics_body_t));
+	struct PhysicsContextBody *ctx = physicsContextBodyAlloc().result.value;
 
-		physicsManagerBodyTranslationCreateEntry(man);
+	for (size_t i = 0; i < ITR; ++i) {
+
+		bodies[i] = physicsBodyCreate(ctx).result.value;
 
 	}
 
-	for (size_t i = 0; i < ITR; i++) {
+	for (size_t i = 0; i < ITR; ++i) {
 
-		physicsManagerBodyTranslationDestroyEntry(man, i);
+		if (i % 3 == 0) {
+
+			struct PhysicsVec3 *pos = &ctx->manTrans->data[i];
+			struct PhysicsVec3 *vel = pos + 1;
+			struct PhysicsVec3 *acc = vel + 1;
+
+			vel->x += rand();
+			acc->y += 0.01f;
+
+		}
+
+		physicsSolverTranslationEuler(ctx->manTrans, 0.01f);
+
+	}
+
+	for (size_t i = 0; i < ITR; ++i) {
+
+		physicsBodyDestroy(ctx, bodies[i]);
 
 	}
 
 	puts("Freeing `PhysicsManagerBodyTranslation`.");
-	physicsManagerBodyTranslationFree(man);
+	physicsContextBodyFree(ctx);
+	free(bodies);
 
 	return 0;
 }

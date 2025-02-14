@@ -8,6 +8,7 @@ set(JAVA_HOME "/home/brahvim/Programs/java/jdk-17.0.7+7/")
 include_directories(
 	${JAVA_HOME}/include
 	${JAVA_HOME}/include/linux
+	${CMAKE_SOURCE_DIR}/include/jni-connector
 )
 
 # Build JNI headers before build:

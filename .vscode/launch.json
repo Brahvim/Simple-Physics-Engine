@@ -1,0 +1,66 @@
+{
+	"configurations": [
+		{
+			"name": "(gdb) Launch",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/build/engine-test/SimplePhysicsEngineTest",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${fileDirname}",
+			"environment": [
+				// {
+				// 	"name": "LSAN_OPTIONS",
+				// 	"value": "verbosity=1:log_threads=1"
+				// },
+			],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"description": "Set Disassembly Flavor to Intel",
+					"text": "-gdb-set disassembly-flavor intel",
+					"ignoreFailures": true
+				}
+			]
+		},
+		{
+			"args": [ // Not passed to Vally :/
+				"-s",
+				"--leak-check=full",
+				"--track-origins=yes",
+				"--trace-children=yes",
+			],
+			"MIMode": "gdb",
+			"type": "cppdbg",
+			"environment": [
+				{
+					"name": "PATH",
+					"value": "$PATH:${command:cmake.launchTargetDirectory}",
+				},
+			],
+			"setupCommands": [
+				{
+					"ignoreFailures": true,
+					"text": "-enable-pretty-printing",
+					"description": "Enable pretty-printing for gdb",
+				},
+				{
+					"ignoreFailures": true,
+					"description": "Connect to valgrind",
+					"text": "${command:valgrind-task-integration.valgrindGdbArg}",
+				},
+			],
+			"request": "launch",
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"name": "Launch Debugger with valgrind",
+			"program": "${command:cmake.launchTargetPath}",
+		},
+	]
+}
