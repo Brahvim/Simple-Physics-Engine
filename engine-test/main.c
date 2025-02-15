@@ -9,7 +9,7 @@ int main(int argc, char const *argv[]) {
 	puts("Allocating `SpManagerBodyTranslation`.");
 
 	sp_body_t *bodies = malloc(ITR * sizeof(sp_body_t));
-	struct SpContextBody *ctx = spContextBodyAlloc().result.value;
+	struct SpContext *ctx = spContextBodyAlloc().result.value;
 
 	for (size_t i = 0; i < ITR; ++i) {
 
@@ -21,16 +21,19 @@ int main(int argc, char const *argv[]) {
 
 		if (i % 3 == 0) {
 
-			struct SpVec3 *pos = &ctx->manTrans->data[i];
-			struct SpVec3 *vel = pos + 1;
-			struct SpVec3 *acc = vel + 1;
+			// struct SpVec3 *pos = &ctx->manTrans->data[i];
+			// struct SpVec3 *vel = pos + 1;
+			// struct SpVec3 *acc = vel + 1;
+			//
+			// vel->x += rand();
+			// acc->y += 0.01f;
 
-			vel->x += rand();
-			acc->y += 0.01f;
+			spBodySetVelX(ctx, i, rand());
+			spBodyAddAccX(ctx, i, 0.01f);
 
 		}
 
-		spSolverTranslationVerlet(ctx->manTrans, 0.01f);
+		spSolveTranslationVerlet(ctx->manTrans, 0.01f);
 
 	}
 
