@@ -7,12 +7,12 @@
 unsigned long long g_spBodyDefaultAllocationCount = 16;
 
 #pragma region Solvers.
-void spSolveTranslationEuler(struct SpManagerBodyTranslation *p_man, float p_dt) {
-	for (unsigned long long i = 0; i < 3 * p_man->capacityActive; i += 3) {
+void spSolveTranslationEuler(struct SpContextTranslation *p_man, float p_dt) {
+	for (unsigned long long i = 0; i < p_man->capacityActive; ++i) {
 
-		struct SpVec3 *pos = p_man->data + i;
-		struct SpVec3 *vel = pos + 1;
-		struct SpVec3 *acc = vel + 1;
+		struct SpVec3 *pos = &p_man->data[i].position;
+		struct SpVec3 *vel = &p_man->data[i].velocity;
+		struct SpVec3 *acc = &p_man->data[i].acceleration;
 
 		vel->x += acc->x * p_dt;
 		vel->y += acc->y * p_dt;
@@ -29,15 +29,16 @@ void spSolveTranslationEuler(struct SpManagerBodyTranslation *p_man, float p_dt)
 	}
 }
 
-void spSolveTranslationVerlet(struct SpManagerBodyTranslation *p_man, float p_dt) {
+void spSolveTranslationVerlet(struct SpContextTranslation *p_man, float p_dt) {
 	float dt2 = p_dt * p_dt; // Squared delta time
 
-	for (unsigned long long i = 0; i < 3 * p_man->capacityActive; i += 3) {
-		struct SpVec3 *pos = p_man->data + i;
-		struct SpVec3 *vel = pos + 1;
-		struct SpVec3 *acc = vel + 1;
+	for (unsigned long long i = 0; i < p_man->capacityActive; ++i) {
 
-		struct SpVec3 prev_pos = *pos; // Save current position
+		struct SpVec3 *pos = &p_man->data[i].position;
+		struct SpVec3 *vel = &p_man->data[i].velocity;
+		struct SpVec3 *acc = &p_man->data[i].acceleration;
+
+		struct SpVec3 prev = *pos; // Save current position
 
 		// Update position using Verlet
 		pos->x = 2 * pos->x - vel->x + acc->x * dt2;
@@ -45,12 +46,13 @@ void spSolveTranslationVerlet(struct SpManagerBodyTranslation *p_man, float p_dt
 		pos->z = 2 * pos->z - vel->z + acc->z * dt2;
 
 		// Approximate velocity (if needed for constraints)
-		vel->x = (pos->x - prev_pos.x) / p_dt;
-		vel->y = (pos->y - prev_pos.y) / p_dt;
-		vel->z = (pos->z - prev_pos.z) / p_dt;
+		vel->x = (pos->x - prev.x) / p_dt;
+		vel->y = (pos->y - prev.y) / p_dt;
+		vel->z = (pos->z - prev.z) / p_dt;
 
 		// Reset acceleration
 		acc->x = acc->y = acc->z = 0;
+
 	}
 }
 
@@ -90,6 +92,11 @@ sp_error_t spContextBodyFree(struct SpContext *p_ctx) {
 #pragma endregion
 
 #pragma region Bodies!
+sp_error_t spBodyDestroy(struct SpContext *p_ctx, sp_body_t p_body) {
+	spManagerBodyTranslationDestroyEntry(p_ctx->manTrans, p_body);
+	return PHYSICS_ERROR_NONE;
+}
+
 struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *p_ctx) {
 	sp_body_t const id = p_ctx->maxId;
 
@@ -124,16 +131,11 @@ struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *p_ctx) {
 	p_ctx->masses[id] = 0;
 	return (struct SpResultIntegerUnsigned) { .bad = 0, .result.value = id };
 }
-
-sp_error_t spBodyDestroy(struct SpContext *p_ctx, sp_body_t p_body) {
-	spManagerBodyTranslationDestroyEntry(p_ctx->manTrans, p_body);
-	return PHYSICS_ERROR_NONE;
-}
 #pragma endregion
 
 #pragma region `struct SpManagerBodyRotation`.
 struct SpResultPointer spManagerBodyRotationAlloc() {
-	struct SpManagerBodyRotation *man = malloc(sizeof(struct SpManagerBodyRotation)); // We zero *everything* later...
+	struct SpContextRotation *man = malloc(sizeof(struct SpContextRotation)); // We zero *everything* later...
 	if (!man) {
 
 		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
@@ -183,7 +185,7 @@ struct SpResultPointer spManagerBodyRotationAlloc() {
 	return (struct SpResultPointer) { .bad = 0, .result.value = man };
 }
 
-sp_error_t spManagerBodyRotationFree(struct SpManagerBodyRotation *p_man) {
+sp_error_t spManagerBodyRotationFree(struct SpContextRotation *p_man) {
 	if (!p_man) {
 
 		return PHYSICS_ERROR_OBJECT_NULL;
@@ -198,7 +200,7 @@ sp_error_t spManagerBodyRotationFree(struct SpManagerBodyRotation *p_man) {
 	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spManagerBodyRotationCreateEntry(struct SpManagerBodyRotation *p_man, sp_body_t p_body) {
+sp_error_t spManagerBodyRotationCreateEntry(struct SpContextRotation *p_man, sp_body_t p_body) {
 	if (p_man->countInactive > 0) { // Grab body from free-list.
 
 		p_man->countInactive--;
@@ -226,7 +228,7 @@ sp_error_t spManagerBodyRotationCreateEntry(struct SpManagerBodyRotation *p_man,
 		p_man->active = active;
 		p_man->capacityActive *= 2;
 
-		void *data = realloc(p_man->data, 2 * 3 * sizeof(struct SpVec3) * (1 + p_man->capacityActive + p_man->capacityInactive));
+		void *data = realloc(p_man->data, 2 * sizeof(struct SpSolverParametersRotation) * (1 + p_man->capacityActive + p_man->capacityInactive));
 
 		if (!data) {
 
@@ -239,14 +241,14 @@ sp_error_t spManagerBodyRotationCreateEntry(struct SpManagerBodyRotation *p_man,
 
 	}
 
-	memset(&p_man->data[p_body], 0, 3 * sizeof(struct SpVec3)); // NOLINT clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+	memset(&p_man->data[p_body], 0, sizeof(struct SpSolverParametersRotation)); // NOLINT clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
 	p_man->active[p_man->countActive] = p_body;
 	p_man->countActive++;
 
 	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spManagerBodyRotationDestroyEntry(struct SpManagerBodyRotation *p_man, sp_body_t p_body) {
+sp_error_t spManagerBodyRotationDestroyEntry(struct SpContextRotation *p_man, sp_body_t p_body) {
 	if (p_man->countInactive >= p_man->capacityInactive) {
 
 		if (p_man->capacityInactive < 1) {
@@ -290,7 +292,7 @@ sp_error_t spManagerBodyRotationDestroyEntry(struct SpManagerBodyRotation *p_man
 
 #pragma region `struct SpManagerBodyTranslation`.
 struct SpResultPointer spManagerBodyTranslationAlloc() {
-	struct SpManagerBodyTranslation *man = malloc(sizeof(struct SpManagerBodyTranslation)); // We zero *everything* later...
+	struct SpContextTranslation *man = malloc(sizeof(struct SpContextTranslation)); // We zero *everything* later...
 	if (!man) {
 
 		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
@@ -340,7 +342,7 @@ struct SpResultPointer spManagerBodyTranslationAlloc() {
 	return (struct SpResultPointer) { .bad = 0, .result.value = man };
 }
 
-sp_error_t spManagerBodyTranslationFree(struct SpManagerBodyTranslation *p_man) {
+sp_error_t spManagerBodyTranslationFree(struct SpContextTranslation *p_man) {
 	if (!p_man) {
 
 		return PHYSICS_ERROR_OBJECT_NULL;
@@ -355,7 +357,7 @@ sp_error_t spManagerBodyTranslationFree(struct SpManagerBodyTranslation *p_man) 
 	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spManagerBodyTranslationCreateEntry(struct SpManagerBodyTranslation *p_man, sp_body_t p_body) {
+sp_error_t spManagerBodyTranslationCreateEntry(struct SpContextTranslation *p_man, sp_body_t p_body) {
 	if (p_man->countInactive > 0) { // Grab body from free-list.
 
 		p_man->countInactive--;
@@ -383,7 +385,7 @@ sp_error_t spManagerBodyTranslationCreateEntry(struct SpManagerBodyTranslation *
 		p_man->active = active;
 		p_man->capacityActive *= 2;
 
-		void *data = realloc(p_man->data, 2 * 3 * sizeof(struct SpVec3) * (1 + p_man->capacityActive + p_man->capacityInactive));
+		void *data = realloc(p_man->data, 2 * sizeof(struct SpSolverParametersTranslation) * (1 + p_man->capacityActive + p_man->capacityInactive));
 
 		if (!data) {
 
@@ -396,14 +398,14 @@ sp_error_t spManagerBodyTranslationCreateEntry(struct SpManagerBodyTranslation *
 
 	}
 
-	memset(&p_man->data[p_body], 0, 3 * sizeof(struct SpVec3)); // NOLINT clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+	memset(&p_man->data[p_body], 0, sizeof(struct SpSolverParametersTranslation)); // NOLINT clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
 	p_man->active[p_man->countActive] = p_body;
 	p_man->countActive++;
 
 	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spManagerBodyTranslationDestroyEntry(struct SpManagerBodyTranslation *p_man, sp_body_t p_body) {
+sp_error_t spManagerBodyTranslationDestroyEntry(struct SpContextTranslation *p_man, sp_body_t p_body) {
 	if (p_man->countInactive >= p_man->capacityInactive) {
 
 		if (p_man->capacityInactive < 1) {
@@ -452,87 +454,87 @@ float spBodyGetMass(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 }
 
 float spBodyGetPosX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body].x;
+	return p_ctx->manTrans->data[p_body].position.x;
 }
 
 float spBodyGetPosY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body].y;
+	return p_ctx->manTrans->data[p_body].position.y;
 }
 
 float spBodyGetPosZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body].z;
+	return p_ctx->manTrans->data[p_body].position.z;
 }
 
 struct SpVec3* spBodyGetPos(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return &p_ctx->manTrans->data[3 * p_body];
+	return &p_ctx->manTrans->data[p_body].position;
 }
 
 float spBodyGetVelX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body + 1].x;
+	return p_ctx->manTrans->data[p_body].velocity.x;
 }
 
 float spBodyGetVelY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body + 1].y;
+	return p_ctx->manTrans->data[p_body].velocity.y;
 }
 
 float spBodyGetVelZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body + 1].z;
+	return p_ctx->manTrans->data[p_body].velocity.z;
 }
 
 struct SpVec3* spBodyGetVel(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return &p_ctx->manTrans->data[3 * p_body + 1];
+	return &p_ctx->manTrans->data[p_body].velocity;
 }
 
 float spBodyGetAccX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body + 2].x;
+	return p_ctx->manTrans->data[p_body].acceleration.x;
 }
 
 float spBodyGetAccY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body + 2].y;
+	return p_ctx->manTrans->data[p_body].acceleration.y;
 }
 
 float spBodyGetAccZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manTrans->data[3 * p_body + 2].z;
+	return p_ctx->manTrans->data[p_body].acceleration.z;
 }
 
 struct SpVec3* spBodyGetAcc(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return &p_ctx->manTrans->data[3 * p_body + 2];
+	return &p_ctx->manTrans->data[p_body].acceleration;
 }
 
 float spBodyGetAngX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body].z;
+	return p_ctx->manRot->data[p_body].angularAcceleration.z;
 }
 
 float spBodyGetAngY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body].y;
+	return p_ctx->manRot->data[p_body].angularAcceleration.y;
 }
 
 float spBodyGetAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body].z;
+	return p_ctx->manRot->data[p_body].angularAcceleration.z;
 }
 
 float spBodyGetVelAngX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body + 1].x;
+	return p_ctx->manRot->data[p_body].angularVelocity.x;
 }
 
 float spBodyGetVelAngY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body + 1].y;
+	return p_ctx->manRot->data[p_body].angularVelocity.y;
 }
 
 float spBodyGetVelAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body + 1].z;
+	return p_ctx->manRot->data[p_body].angularVelocity.z;
 }
 
 float spBodyGetAccAngX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body + 2].x;
+	return p_ctx->manRot->data[p_body].angularAcceleration.x;
 }
 
 float spBodyGetAccAngY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body + 2].y;
+	return p_ctx->manRot->data[p_body].angularAcceleration.y;
 }
 
 float spBodyGetAccAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->manRot->data[3 * p_body + 2].z;
+	return p_ctx->manRot->data[p_body].angularAcceleration.z;
 }
 #pragma endregion
 
@@ -542,111 +544,111 @@ void spBodySetMass(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_v
 }
 
 void spBodySetPosX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body].x = p_value;
+	p_ctx->manTrans->data[p_body].position.x = p_value;
 }
 
 void spBodySetPosY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body].y = p_value;
+	p_ctx->manTrans->data[p_body].position.y = p_value;
 }
 
 void spBodySetPosZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body].z = p_value;
+	p_ctx->manTrans->data[p_body].position.z = p_value;
 }
 
 void spBodySetPosition(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manTrans->data[3 * p_body].x = p_x;
-	p_ctx->manTrans->data[3 * p_body].y = p_y;
-	p_ctx->manTrans->data[3 * p_body].z = p_z;
+	p_ctx->manTrans->data[p_body].position.x = p_x;
+	p_ctx->manTrans->data[p_body].position.y = p_y;
+	p_ctx->manTrans->data[p_body].position.z = p_z;
 }
 
 void spBodySetVelX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 1].x = p_value;
+	p_ctx->manTrans->data[p_body].velocity.x = p_value;
 }
 
 void spBodySetVelY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 1].y = p_value;
+	p_ctx->manTrans->data[p_body].velocity.y = p_value;
 }
 
 void spBodySetVelZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 1].z = p_value;
+	p_ctx->manTrans->data[p_body].velocity.z = p_value;
 }
 
 void spBodySetVelocity(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manTrans->data[3 * p_body + 1].x = p_x;
-	p_ctx->manTrans->data[3 * p_body + 1].y = p_y;
-	p_ctx->manTrans->data[3 * p_body + 1].z = p_z;
+	p_ctx->manTrans->data[p_body].velocity.x = p_x;
+	p_ctx->manTrans->data[p_body].velocity.y = p_y;
+	p_ctx->manTrans->data[p_body].velocity.z = p_z;
 }
 
 void spBodySetAccX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 2].x = p_value;
+	p_ctx->manTrans->data[p_body].acceleration.x = p_value;
 }
 
 void spBodySetAccY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 2].y = p_value;
+	p_ctx->manTrans->data[p_body].acceleration.y = p_value;
 }
 
 void spBodySetAccZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 2].z = p_value;
+	p_ctx->manTrans->data[p_body].acceleration.z = p_value;
 }
 
 void spBodySetAcceleration(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manTrans->data[3 * p_body + 2].x = p_x;
-	p_ctx->manTrans->data[3 * p_body + 2].y = p_y;
-	p_ctx->manTrans->data[3 * p_body + 2].z = p_z;
+	p_ctx->manTrans->data[p_body].acceleration.x = p_x;
+	p_ctx->manTrans->data[p_body].acceleration.y = p_y;
+	p_ctx->manTrans->data[p_body].acceleration.z = p_z;
 }
 
 void spBodySetAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body].z = p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.z = p_value;
 }
 
 void spBodySetAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body].y = p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.y = p_value;
 }
 
 void spBodySetAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body].z = p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.z = p_value;
 }
 
 void spBodySetAngles(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manRot->data[3 * p_body].x = p_x;
-	p_ctx->manRot->data[3 * p_body].y = p_y;
-	p_ctx->manRot->data[3 * p_body].z = p_z;
+	p_ctx->manRot->data[p_body].angularAcceleration.x = p_x;
+	p_ctx->manRot->data[p_body].angularAcceleration.y = p_y;
+	p_ctx->manRot->data[p_body].angularAcceleration.z = p_z;
 }
 
 void spBodySetVelAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body + 1].x = p_value;
+	p_ctx->manRot->data[p_body].angularVelocity.x = p_value;
 }
 
 void spBodySetVelAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body + 1].y = p_value;
+	p_ctx->manRot->data[p_body].angularVelocity.y = p_value;
 }
 
 void spBodySetVelAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body + 1].z = p_value;
+	p_ctx->manRot->data[p_body].angularVelocity.z = p_value;
 }
 
 void spBodySetVelocityAngular(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manRot->data[3 * p_body + 1].x = p_x;
-	p_ctx->manRot->data[3 * p_body + 1].y = p_y;
-	p_ctx->manRot->data[3 * p_body + 1].z = p_z;
+	p_ctx->manRot->data[p_body].angularVelocity.x = p_x;
+	p_ctx->manRot->data[p_body].angularVelocity.y = p_y;
+	p_ctx->manRot->data[p_body].angularVelocity.z = p_z;
 }
 
 void spBodySetAccAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body + 2].x = p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.x = p_value;
 }
 
 void spBodySetAccAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body + 2].y = p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.y = p_value;
 }
 
 void spBodySetAccAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body + 2].z = p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.z = p_value;
 }
 
 void spBodySetAccelerationAngular(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manRot->data[3 * p_body + 2].x = p_x;
-	p_ctx->manRot->data[3 * p_body + 2].y = p_y;
-	p_ctx->manRot->data[3 * p_body + 2].z = p_z;
+	p_ctx->manRot->data[p_body].angularAcceleration.x = p_x;
+	p_ctx->manRot->data[p_body].angularAcceleration.y = p_y;
+	p_ctx->manRot->data[p_body].angularAcceleration.z = p_z;
 }
 #pragma endregion
 
@@ -656,73 +658,73 @@ void spBodyAddMass(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_v
 }
 
 void spBodyAddPosX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body].x += p_value;
+	p_ctx->manTrans->data[p_body].position.x += p_value;
 }
 
 void spBodyAddPosY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body].y += p_value;
+	p_ctx->manTrans->data[p_body].position.y += p_value;
 }
 
 void spBodyAddPosZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body].z += p_value;
+	p_ctx->manTrans->data[p_body].position.z += p_value;
 }
 
 void spBodyAddPosition(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manTrans->data[3 * p_body].x += p_x;
-	p_ctx->manTrans->data[3 * p_body].y += p_y;
-	p_ctx->manTrans->data[3 * p_body].z += p_z;
+	p_ctx->manTrans->data[p_body].position.x += p_x;
+	p_ctx->manTrans->data[p_body].position.y += p_y;
+	p_ctx->manTrans->data[p_body].position.z += p_z;
 }
 
 void spBodyAddVelX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 1].x += p_value;
+	p_ctx->manTrans->data[p_body].velocity.x += p_value;
 }
 
 void spBodyAddVelY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 1].y += p_value;
+	p_ctx->manTrans->data[p_body].velocity.y += p_value;
 }
 
 void spBodyAddVelZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 1].z += p_value;
+	p_ctx->manTrans->data[p_body].velocity.z += p_value;
 }
 
 void spBodyAddVelocity(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manTrans->data[3 * p_body + 1].x += p_x;
-	p_ctx->manTrans->data[3 * p_body + 1].y += p_y;
-	p_ctx->manTrans->data[3 * p_body + 1].z += p_z;
+	p_ctx->manTrans->data[p_body].velocity.x += p_x;
+	p_ctx->manTrans->data[p_body].velocity.y += p_y;
+	p_ctx->manTrans->data[p_body].velocity.z += p_z;
 }
 
 void spBodyAddAccX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 2].x += p_value;
+	p_ctx->manTrans->data[p_body].acceleration.x += p_value;
 }
 
 void spBodyAddAccY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 2].y += p_value;
+	p_ctx->manTrans->data[p_body].acceleration.y += p_value;
 }
 
 void spBodyAddAccZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manTrans->data[3 * p_body + 2].z += p_value;
+	p_ctx->manTrans->data[p_body].acceleration.z += p_value;
 }
 
 void spBodyAddAcceleration(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->manTrans->data[3 * p_body + 2].x += p_x;
-	p_ctx->manTrans->data[3 * p_body + 2].y += p_y;
-	p_ctx->manTrans->data[3 * p_body + 2].z += p_z;
+	p_ctx->manTrans->data[p_body].acceleration.x += p_x;
+	p_ctx->manTrans->data[p_body].acceleration.y += p_y;
+	p_ctx->manTrans->data[p_body].acceleration.z += p_z;
 }
 
 void spBodyAddAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body].z += p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.z += p_value;
 }
 
 void spBodyAddAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->manRot->data[3 * p_body].y += p_value;
+	p_ctx->manRot->data[p_body].angularAcceleration.y += p_value;
 }
 
 
 void spBodyForceCenter(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_fx, float p_fy, float p_fz) {
 	float const mass = spBodyGetMass(p_ctx, p_body);
-	p_ctx->manTrans->data[3 * p_body].x += p_fx / mass;
-	p_ctx->manTrans->data[3 * p_body].y += p_fy / mass;
-	p_ctx->manTrans->data[3 * p_body].z += p_fz / mass;
+	p_ctx->manTrans->data[p_body].position.x += p_fx / mass;
+	p_ctx->manTrans->data[p_body].position.y += p_fy / mass;
+	p_ctx->manTrans->data[p_body].position.z += p_fz / mass;
 }
 
 void spBodyForce(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_fx, float p_fy, float p_fz, float p_px, float p_py, float p_pz) {
@@ -738,9 +740,9 @@ void spBodyForce(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_fx,
 	float const torqueZ = p_fx * diffY - diffX * p_fy;
 
 	// Replace *mass* with *moment of inertia!:*
-	p_ctx->manTrans->data[p_body * 3].x += torqueX / mass;
-	p_ctx->manTrans->data[p_body * 3 + 1].y += torqueY / mass;
-	p_ctx->manTrans->data[p_body * 3 + 2].z += torqueZ / mass;
+	p_ctx->manRot->data[p_body].angularAcceleration.x += torqueX / mass;
+	p_ctx->manRot->data[p_body].angularAcceleration.y += torqueY / mass;
+	p_ctx->manRot->data[p_body].angularAcceleration.z += torqueZ / mass;
 }
 
 #pragma endregion

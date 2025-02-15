@@ -20,7 +20,11 @@
 		"*.luac": "lua",
 		"com_brahvim_physics_engine.h": "c",
 		"immintrin.h": "c",
-		"avxintrin.h": "c"
+		"avxintrin.h": "c",
+		"array": "c",
+		"string": "c",
+		"string_view": "c",
+		"vector": "c"
 	},
 	"C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 	"cmake.sourceDirectory": "/home/brahvim/Code/C/SimplePhysicsEngine",

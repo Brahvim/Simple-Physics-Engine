@@ -16,7 +16,7 @@ struct SpVec3 {
 
 struct SpContext {
 
-	struct SpManagerBodyTranslation {
+	struct SpContextRotation {
 
 		unsigned long long capacityInactive;
 		unsigned long long capacityActive;
@@ -26,23 +26,35 @@ struct SpContext {
 		unsigned long long *inactive;
 		unsigned long long *active;
 
-		struct SpVec3 *data; // AoS with `(pos, vel, acc)` tuples.
+		struct SpSolverParametersRotation {
 
-	} *manTrans;
+			struct SpVec3 angles;
+			struct SpVec3 angularVelocity;
+			struct SpVec3 angularAcceleration;
 
-	struct SpManagerBodyRotation {
-
-		unsigned long long capacityInactive;
-		unsigned long long capacityActive;
-		unsigned long long countInactive;
-		unsigned long long countActive;
-
-		unsigned long long *inactive;
-		unsigned long long *active;
-
-		struct SpVec3 *data; // AoS with `(pos, vel, acc)` tuples.
+		} *data; // AoS with `(pos, vel, acc)` tuples.
 
 	} *manRot;
+
+	struct SpContextTranslation {
+
+		unsigned long long capacityInactive;
+		unsigned long long capacityActive;
+		unsigned long long countInactive;
+		unsigned long long countActive;
+
+		unsigned long long *inactive;
+		unsigned long long *active;
+
+		struct SpSolverParametersTranslation {
+
+			struct SpVec3 position;
+			struct SpVec3 velocity;
+			struct SpVec3 acceleration;
+
+		} *data; // AoS with `(pos, vel, acc)` tuples.
+
+	} *manTrans;
 
 	unsigned long long capacityMasses;
 	unsigned long long maxId;
@@ -111,18 +123,19 @@ extern unsigned long long g_spBodyDefaultAllocationCount;
 struct SpResultPointer spContextBodyAlloc();
 sp_error_t spContextBodyFree(struct SpContext *ctx);
 
-// void spBodyForceCenter();
-
-struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *ctx);
 sp_error_t spBodyDestroy(struct SpContext *ctx, sp_body_t body);
+struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *ctx);
 
-void spSolveTranslationEuler(struct SpManagerBodyTranslation *man, float dt);
-void spSolveTranslationVerlet(struct SpManagerBodyTranslation *man, float dt);
+void spSolveRotationEuler(struct SpContextTranslation *man, float dt);
+void spSolveRotationVerlet(struct SpContextTranslation *man, float dt);
+
+void spSolveTranslationEuler(struct SpContextTranslation *man, float dt);
+void spSolveTranslationVerlet(struct SpContextTranslation *man, float dt);
 
 struct SpResultPointer spManagerBodyTranslationAlloc();
-sp_error_t spManagerBodyTranslationFree(struct SpManagerBodyTranslation* man);
-sp_error_t spManagerBodyTranslationCreateEntry(struct SpManagerBodyTranslation* man, sp_body_t body);
-sp_error_t spManagerBodyTranslationDestroyEntry(struct SpManagerBodyTranslation* man, sp_body_t body);
+sp_error_t spManagerBodyTranslationFree(struct SpContextTranslation* man);
+sp_error_t spManagerBodyTranslationCreateEntry(struct SpContextTranslation* man, sp_body_t body);
+sp_error_t spManagerBodyTranslationDestroyEntry(struct SpContextTranslation* man, sp_body_t body);
 
 float spBodyGetMass(struct SpContext *restrict ctx, sp_body_t body);
 float spBodyGetPosX(struct SpContext *restrict ctx, sp_body_t body);

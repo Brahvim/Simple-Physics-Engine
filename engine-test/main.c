@@ -6,7 +6,7 @@
 #define ITR 100
 
 int main(int argc, char const *argv[]) {
-	puts("Allocating `SpManagerBodyTranslation`.");
+	puts("Allocating `SpContextTranslation`.");
 
 	sp_body_t *bodies = malloc(ITR * sizeof(sp_body_t));
 	struct SpContext *ctx = spContextBodyAlloc().result.value;
@@ -33,6 +33,7 @@ int main(int argc, char const *argv[]) {
 
 		}
 
+		// spSolveRotationVerlet(ctx->manTrans, 0.01f);
 		spSolveTranslationVerlet(ctx->manTrans, 0.01f);
 
 	}
@@ -43,7 +44,7 @@ int main(int argc, char const *argv[]) {
 
 	}
 
-	puts("Freeing `SpManagerBodyTranslation`.");
+	puts("Freeing `SpContextTranslation`.");
 	spContextBodyFree(ctx);
 	free(bodies);
 
