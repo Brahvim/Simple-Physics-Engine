@@ -10,7 +10,7 @@ int main(int const p_argCount, char const *const *const p_argValues) {
 	puts("Allocating `SpContextTranslation`.");
 
 	sp_body_t *bodies = malloc(ITR * sizeof(sp_body_t));
-	struct SpContext *ctx = spContextBodyAlloc().result.value;
+	struct SpContext *ctx = spContextAlloc().result.value;
 
 	// Allocation:
 	for (size_t i = 0; i < ITR; ++i) {
@@ -19,13 +19,14 @@ int main(int const p_argCount, char const *const *const p_argValues) {
 
 	}
 
-	// Simulation:
+	// Simulation modifications:
 	for (size_t i = 0; i < ITR; ++i) {
 
 		spBodySetVelX(ctx, i, rand());
 
 	}
 
+	// Simulation:
 	for (size_t i = 0; i < ITR; ++i) {
 
 		spBodyAddAccX(ctx, i, 0.01f);
@@ -43,7 +44,7 @@ int main(int const p_argCount, char const *const *const p_argValues) {
 	}
 
 	puts("Freeing `SpContextTranslation`.");
-	spContextBodyFree(ctx);
+	spContextFree(ctx);
 	free(bodies);
 
 	return 0;

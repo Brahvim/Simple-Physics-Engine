@@ -10,6 +10,18 @@ typedef unsigned long long sp_error_t;
 
 extern unsigned long long g_spBodyDefaultAllocationCount;
 
+struct SpQuat {
+
+	float x, y, z, w;
+
+};
+
+struct SpVec2 {
+
+	float x, y;
+
+};
+
 struct SpVec3 {
 
 	float x, y, z;
@@ -120,21 +132,19 @@ struct SpResultIntegerUnsigned {
 
 };
 
-struct SpResultPointer spContextBodyAlloc();
-sp_error_t spContextBodyFree(struct SpContext *ctx);
+struct SpResultPointer spContextAlloc();
+sp_error_t spContextFree(struct SpContext *restrict ctx);
+sp_error_t spBodyDestroy(struct SpContext *restrict ctx, sp_body_t body);
+struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *restrict ctx);
 
-sp_error_t spBodyDestroy(struct SpContext *ctx, sp_body_t body);
-struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *ctx);
+// void spSolveRotationEuler(struct SpContextTranslation *restrict man, float dt);
+void spSolveTranslationEuler(struct SpContextTranslation *restrict man, float dt);
+void spSolveTranslationVerlet(struct SpContextTranslation *restrict man, float dt);
 
-// void spSolveRotationEuler(struct SpContextTranslation *man, float dt);
-
-void spSolveTranslationEuler(struct SpContextTranslation *man, float dt);
-void spSolveTranslationVerlet(struct SpContextTranslation *man, float dt);
-
-struct SpResultPointer spManagerBodyTranslationAlloc();
-sp_error_t spManagerBodyTranslationFree(struct SpContextTranslation* man);
-sp_error_t spManagerBodyTranslationCreateEntry(struct SpContextTranslation* man, sp_body_t body);
-sp_error_t spManagerBodyTranslationDestroyEntry(struct SpContextTranslation* man, sp_body_t body);
+struct SpResultPointer spContextTranslationAlloc();
+sp_error_t spContextTranslationFree(struct SpContextTranslation *restrict man);
+sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict man, sp_body_t body);
+sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restrict man, sp_body_t body);
 
 float spBodyGetMass(struct SpContext *restrict ctx, sp_body_t body);
 float spBodyGetPosX(struct SpContext *restrict ctx, sp_body_t body);

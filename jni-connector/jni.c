@@ -6,7 +6,7 @@ JNIEXPORT void JNICALL Java_com_brahvim_sp_Engine_create(JNIEnv *p_env, jclass p
 	puts("JVM called `Engine::create()`.");
 
 	// puts("Allocating `SpContextTranslation`.");
-	// struct SpContextTranslation *man = spManagerBodyTranslationAlloc().result.value;
-	// spManagerBodyTranslationFree(man);
+	// struct SpContextTranslation *man = spContextTranslationAlloc().result.value;
+	// spContextTranslationFree(man);
 	// puts("Freeing `SpContextTranslation`.");
 }
