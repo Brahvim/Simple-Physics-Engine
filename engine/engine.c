@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <memory.h>
 
+#include "ifs.h"
 #include "engine/engine.h"
 
 unsigned long long g_spBodyDefaultAllocationCount = 16;
 
 #pragma region Solvers.
+#pragma region Translation.
 void spSolveTranslationEuler(struct SpContextTranslation *p_man, float p_dt) {
 	for (unsigned long long i = 0; i < p_man->capacityActive; ++i) {
 
@@ -22,16 +24,12 @@ void spSolveTranslationEuler(struct SpContextTranslation *p_man, float p_dt) {
 		pos->y += vel->y * p_dt;
 		pos->z += vel->z * p_dt;
 
-		acc->x = 0;
-		acc->y = 0;
-		acc->z = 0;
+		acc->x = acc->y = acc->z = 0;
 
 	}
 }
 
 void spSolveTranslationVerlet(struct SpContextTranslation *p_man, float p_dt) {
-	float dt2 = p_dt * p_dt; // Squared delta time
-
 	for (unsigned long long i = 0; i < p_man->capacityActive; ++i) {
 
 		struct SpVec3 *pos = &p_man->data[i].position;
@@ -41,9 +39,9 @@ void spSolveTranslationVerlet(struct SpContextTranslation *p_man, float p_dt) {
 		struct SpVec3 prev = *pos; // Save current position
 
 		// Update position using Verlet
-		pos->x = 2 * pos->x - vel->x + acc->x * dt2;
-		pos->y = 2 * pos->y - vel->y + acc->y * dt2;
-		pos->z = 2 * pos->z - vel->z + acc->z * dt2;
+		pos->x = 2 * pos->x - vel->x + acc->x * p_dt * p_dt;
+		pos->y = 2 * pos->y - vel->y + acc->y * p_dt * p_dt;
+		pos->z = 2 * pos->z - vel->z + acc->z * p_dt * p_dt;
 
 		// Approximate velocity (if needed for constraints)
 		vel->x = (pos->x - prev.x) / p_dt;
@@ -55,14 +53,17 @@ void spSolveTranslationVerlet(struct SpContextTranslation *p_man, float p_dt) {
 
 	}
 }
+#pragma endregion
 
+#pragma region Rotation.
+#pragma endregion
 #pragma endregion
 
 #pragma region `struct SpContextBody`.
 struct SpResultPointer spContextBodyAlloc() {
 	struct SpContext *ctx = malloc(sizeof(struct SpContext));
 
-	if (!ctx) {
+	ifu(!ctx) {
 
 		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
 
@@ -73,11 +74,11 @@ struct SpResultPointer spContextBodyAlloc() {
 	ctx->capacityMasses = g_spBodyDefaultAllocationCount;
 	ctx->maxId = 0;
 
-	return (struct SpResultPointer) { .bad = 0, .result.value = ctx }; // cppcheck-suppress memleak
+	return (struct SpResultPointer) { .bad = 0, .result.value = ctx };
 }
 
 sp_error_t spContextBodyFree(struct SpContext *p_ctx) {
-	if (!p_ctx) {
+	ifu(!p_ctx) {
 
 		return PHYSICS_ERROR_OBJECT_NULL;
 
@@ -102,9 +103,9 @@ struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *p_ctx) {
 
 	spManagerBodyTranslationCreateEntry(p_ctx->manTrans, id);
 
-	if (p_ctx->maxId >= p_ctx->capacityMasses) {
+	ifu(p_ctx->maxId >= p_ctx->capacityMasses) {
 
-		if (p_ctx->capacityMasses < 1) {
+		ifu(p_ctx->capacityMasses < 1) {
 
 			p_ctx->capacityMasses = g_spBodyDefaultAllocationCount;
 
@@ -113,7 +114,7 @@ struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *p_ctx) {
 		unsigned long long cap = 2 * p_ctx->capacityMasses;
 		float *masses = realloc(p_ctx->masses, cap * sizeof(float));
 
-		if (!masses) {
+		ifu(!masses) {
 
 			return (struct SpResultIntegerUnsigned) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
 
@@ -136,14 +137,14 @@ struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *p_ctx) {
 #pragma region `struct SpManagerBodyRotation`.
 struct SpResultPointer spManagerBodyRotationAlloc() {
 	struct SpContextRotation *man = malloc(sizeof(struct SpContextRotation)); // We zero *everything* later...
-	if (!man) {
+	ifu(!man) {
 
 		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
 
 	}
 
 	man->active = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	if (!man->active) {
+	ifu(!man->active) {
 
 		free(man);
 		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
@@ -152,7 +153,7 @@ struct SpResultPointer spManagerBodyRotationAlloc() {
 
 	man->capacityActive = g_spBodyDefaultAllocationCount;
 	man->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	if (!man->inactive) {
+	ifu(!man->inactive) {
 
 		free(man->active);
 		free(man);
@@ -161,8 +162,8 @@ struct SpResultPointer spManagerBodyRotationAlloc() {
 	}
 
 	man->capacityInactive = g_spBodyDefaultAllocationCount;
-	man->data = calloc(3 * (1 + g_spBodyDefaultAllocationCount), sizeof(struct SpVec3));
-	if (!man->data) {
+	man->data = calloc(1 + g_spBodyDefaultAllocationCount, sizeof(struct SpSolverParametersRotation));
+	ifu(!man->data) {
 
 		free(man->active);
 		free(man->inactive);
@@ -186,7 +187,7 @@ struct SpResultPointer spManagerBodyRotationAlloc() {
 }
 
 sp_error_t spManagerBodyRotationFree(struct SpContextRotation *p_man) {
-	if (!p_man) {
+	ifu(!p_man) {
 
 		return PHYSICS_ERROR_OBJECT_NULL;
 
@@ -201,16 +202,16 @@ sp_error_t spManagerBodyRotationFree(struct SpContextRotation *p_man) {
 }
 
 sp_error_t spManagerBodyRotationCreateEntry(struct SpContextRotation *p_man, sp_body_t p_body) {
-	if (p_man->countInactive > 0) { // Grab body from free-list.
+	ifu(p_man->countInactive > 0) { // Grab body from free-list.
 
 		p_man->countInactive--;
 		p_body = p_man->inactive[p_man->countInactive];
 
 	}
 
-	if (p_man->countActive >= p_man->capacityActive) {
+	ifu(p_man->countActive >= p_man->capacityActive) {
 
-		if (p_man->capacityActive < 1) {
+		ifu(p_man->capacityActive < 1) {
 
 			p_man->capacityActive = g_spBodyDefaultAllocationCount;
 
@@ -218,7 +219,7 @@ sp_error_t spManagerBodyRotationCreateEntry(struct SpContextRotation *p_man, sp_
 
 		void *active = realloc(p_man->active, 2 * sizeof(unsigned long long) * p_man->capacityActive);
 
-		if (!active) {
+		ifu(!active) {
 
 			// spManagerBodyRotationFree(p_man); // Yep! Free the *whole* manager.
 			return PHYSICS_ERROR_OUT_OF_MEMORY;
@@ -230,7 +231,7 @@ sp_error_t spManagerBodyRotationCreateEntry(struct SpContextRotation *p_man, sp_
 
 		void *data = realloc(p_man->data, 2 * sizeof(struct SpSolverParametersRotation) * (1 + p_man->capacityActive + p_man->capacityInactive));
 
-		if (!data) {
+		ifu(!data) {
 
 			// spManagerBodyRotationFree(p_man); // Yep! Free the *whole* manager.
 			return PHYSICS_ERROR_OUT_OF_MEMORY;
@@ -249,9 +250,9 @@ sp_error_t spManagerBodyRotationCreateEntry(struct SpContextRotation *p_man, sp_
 }
 
 sp_error_t spManagerBodyRotationDestroyEntry(struct SpContextRotation *p_man, sp_body_t p_body) {
-	if (p_man->countInactive >= p_man->capacityInactive) {
+	ifu(p_man->countInactive >= p_man->capacityInactive) {
 
-		if (p_man->capacityInactive < 1) {
+		ifu(p_man->capacityInactive < 1) {
 
 			p_man->capacityInactive = g_spBodyDefaultAllocationCount;
 
@@ -259,7 +260,7 @@ sp_error_t spManagerBodyRotationDestroyEntry(struct SpContextRotation *p_man, sp
 
 		void *inactive = realloc(p_man->inactive, 2 * sizeof(unsigned long long) * p_man->capacityInactive);
 
-		if (!inactive) {
+		ifu(!inactive) {
 
 			// spManagerBodyRotationFree(p_man); // Yep! Free the *whole* manager.
 			return PHYSICS_ERROR_OUT_OF_MEMORY;
@@ -273,7 +274,7 @@ sp_error_t spManagerBodyRotationDestroyEntry(struct SpContextRotation *p_man, sp
 
 	for (unsigned long long i = 0; i < p_man->countActive; ++i) {
 
-		if (p_man->active[i] == p_body) {
+		ifu(p_man->active[i] == p_body) {
 
 			p_man->active[i] = p_man->active[p_man->countActive - 1];
 			p_man->countActive--;
@@ -293,14 +294,14 @@ sp_error_t spManagerBodyRotationDestroyEntry(struct SpContextRotation *p_man, sp
 #pragma region `struct SpManagerBodyTranslation`.
 struct SpResultPointer spManagerBodyTranslationAlloc() {
 	struct SpContextTranslation *man = malloc(sizeof(struct SpContextTranslation)); // We zero *everything* later...
-	if (!man) {
+	ifu(!man) {
 
 		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
 
 	}
 
 	man->active = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	if (!man->active) {
+	ifu(!man->active) {
 
 		free(man);
 		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
@@ -309,7 +310,7 @@ struct SpResultPointer spManagerBodyTranslationAlloc() {
 
 	man->capacityActive = g_spBodyDefaultAllocationCount;
 	man->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	if (!man->inactive) {
+	ifu(!man->inactive) {
 
 		free(man->active);
 		free(man);
@@ -318,8 +319,8 @@ struct SpResultPointer spManagerBodyTranslationAlloc() {
 	}
 
 	man->capacityInactive = g_spBodyDefaultAllocationCount;
-	man->data = calloc(3 * (1 + g_spBodyDefaultAllocationCount), sizeof(struct SpVec3));
-	if (!man->data) {
+	man->data = calloc(1 + g_spBodyDefaultAllocationCount, sizeof(struct SpSolverParametersTranslation));
+	ifu(!man->data) {
 
 		free(man->active);
 		free(man->inactive);
@@ -343,7 +344,7 @@ struct SpResultPointer spManagerBodyTranslationAlloc() {
 }
 
 sp_error_t spManagerBodyTranslationFree(struct SpContextTranslation *p_man) {
-	if (!p_man) {
+	ifu(!p_man) {
 
 		return PHYSICS_ERROR_OBJECT_NULL;
 
@@ -358,16 +359,16 @@ sp_error_t spManagerBodyTranslationFree(struct SpContextTranslation *p_man) {
 }
 
 sp_error_t spManagerBodyTranslationCreateEntry(struct SpContextTranslation *p_man, sp_body_t p_body) {
-	if (p_man->countInactive > 0) { // Grab body from free-list.
+	ifu(p_man->countInactive > 0) { // Grab body from free-list.
 
 		p_man->countInactive--;
 		p_body = p_man->inactive[p_man->countInactive];
 
 	}
 
-	if (p_man->countActive >= p_man->capacityActive) {
+	ifu(p_man->countActive >= p_man->capacityActive) {
 
-		if (p_man->capacityActive < 1) {
+		ifu(p_man->capacityActive < 1) {
 
 			p_man->capacityActive = g_spBodyDefaultAllocationCount;
 
@@ -375,7 +376,7 @@ sp_error_t spManagerBodyTranslationCreateEntry(struct SpContextTranslation *p_ma
 
 		void *active = realloc(p_man->active, 2 * sizeof(unsigned long long) * p_man->capacityActive);
 
-		if (!active) {
+		ifu(!active) {
 
 			// spManagerBodyTranslationFree(p_man); // Yep! Free the *whole* manager.
 			return PHYSICS_ERROR_OUT_OF_MEMORY;
@@ -387,7 +388,7 @@ sp_error_t spManagerBodyTranslationCreateEntry(struct SpContextTranslation *p_ma
 
 		void *data = realloc(p_man->data, 2 * sizeof(struct SpSolverParametersTranslation) * (1 + p_man->capacityActive + p_man->capacityInactive));
 
-		if (!data) {
+		ifu(!data) {
 
 			// spManagerBodyTranslationFree(p_man); // Yep! Free the *whole* manager.
 			return PHYSICS_ERROR_OUT_OF_MEMORY;
@@ -406,9 +407,9 @@ sp_error_t spManagerBodyTranslationCreateEntry(struct SpContextTranslation *p_ma
 }
 
 sp_error_t spManagerBodyTranslationDestroyEntry(struct SpContextTranslation *p_man, sp_body_t p_body) {
-	if (p_man->countInactive >= p_man->capacityInactive) {
+	ifu(p_man->countInactive >= p_man->capacityInactive) {
 
-		if (p_man->capacityInactive < 1) {
+		ifu(p_man->capacityInactive < 1) {
 
 			p_man->capacityInactive = g_spBodyDefaultAllocationCount;
 
@@ -416,7 +417,7 @@ sp_error_t spManagerBodyTranslationDestroyEntry(struct SpContextTranslation *p_m
 
 		void *inactive = realloc(p_man->inactive, 2 * sizeof(unsigned long long) * p_man->capacityInactive);
 
-		if (!inactive) {
+		ifu(!inactive) {
 
 			// spManagerBodyTranslationFree(p_man); // Yep! Free the *whole* manager.
 			return PHYSICS_ERROR_OUT_OF_MEMORY;
@@ -430,7 +431,7 @@ sp_error_t spManagerBodyTranslationDestroyEntry(struct SpContextTranslation *p_m
 
 	for (unsigned long long i = 0; i < p_man->countActive; ++i) {
 
-		if (p_man->active[i] == p_body) {
+		ifu(p_man->active[i] == p_body) {
 
 			p_man->active[i] = p_man->active[p_man->countActive - 1];
 			p_man->countActive--;
@@ -718,7 +719,6 @@ void spBodyAddAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_v
 void spBodyAddAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
 	p_ctx->manRot->data[p_body].angularAcceleration.y += p_value;
 }
-
 
 void spBodyForceCenter(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_fx, float p_fy, float p_fz) {
 	float const mass = spBodyGetMass(p_ctx, p_body);

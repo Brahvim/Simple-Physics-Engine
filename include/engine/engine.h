@@ -8,6 +8,8 @@ typedef unsigned long long sp_error_t;
 #define PHYSICS_ERROR_OBJECT_ABSENT			1 << 2
 #define PHYSICS_ERROR_OUT_OF_MEMORY			1 << 4
 
+extern unsigned long long g_spBodyDefaultAllocationCount;
+
 struct SpVec3 {
 
 	float x, y, z;
@@ -118,16 +120,13 @@ struct SpResultIntegerUnsigned {
 
 };
 
-extern unsigned long long g_spBodyDefaultAllocationCount;
-
 struct SpResultPointer spContextBodyAlloc();
 sp_error_t spContextBodyFree(struct SpContext *ctx);
 
 sp_error_t spBodyDestroy(struct SpContext *ctx, sp_body_t body);
 struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *ctx);
 
-void spSolveRotationEuler(struct SpContextTranslation *man, float dt);
-void spSolveRotationVerlet(struct SpContextTranslation *man, float dt);
+// void spSolveRotationEuler(struct SpContextTranslation *man, float dt);
 
 void spSolveTranslationEuler(struct SpContextTranslation *man, float dt);
 void spSolveTranslationVerlet(struct SpContextTranslation *man, float dt);

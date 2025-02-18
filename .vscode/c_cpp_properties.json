@@ -1,16 +1,17 @@
 {
+    "version": 4,
     "configurations": [
         {
-            "defines": [],
             "name": "Linux",
-            "includePath": [
-                "${default}",
-                "/home/brahvim/Programs/java/jdk-17.0.7+7/include/**"
-            ],
+            "defines": [],
             "cStandard": "c23",
             "cppStandard": "c++23",
+            "includePath": [
+                "${default}",
+                "/home/brahvim/Code/C/SimplePhysicsEngine/include/**",
+                "/home/brahvim/Programs/java/jdk-17.0.7+7/include/**"
+            ],
             "intelliSenseMode": "${default}"
         }
-    ],
-    "version": 4
+    ]
 }
