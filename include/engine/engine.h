@@ -48,7 +48,7 @@ struct SpContext {
 
 		} *data; // AoS with `(pos, vel, acc)` tuples.
 
-	} *manRot;
+	} *ctxRot;
 
 	struct SpContextTranslation {
 
@@ -68,7 +68,7 @@ struct SpContext {
 
 		} *data; // AoS with `(pos, vel, acc)` tuples.
 
-	} *manTrans;
+	} *ctxTrans;
 
 	unsigned long long capacityMasses;
 	unsigned long long maxId;
@@ -82,7 +82,7 @@ struct SpResultFloat {
 
 	union SpUnionErrorFloat {
 
-		float *value;
+		float value;
 		sp_error_t error;
 
 	} result;
@@ -137,14 +137,14 @@ sp_error_t spContextFree(struct SpContext *restrict ctx);
 sp_error_t spBodyDestroy(struct SpContext *restrict ctx, sp_body_t body);
 struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *restrict ctx);
 
-// void spSolveRotationEuler(struct SpContextTranslation *restrict man, float dt);
-void spSolveTranslationEuler(struct SpContextTranslation *restrict man, float dt);
-void spSolveTranslationVerlet(struct SpContextTranslation *restrict man, float dt);
+// void spSolveRotationEuler(struct SpContextTranslation *restrict ctx, float dt);
+void spSolveTranslationEuler(struct SpContextTranslation *restrict ctx, float dt);
+void spSolveTranslationVerlet(struct SpContextTranslation *restrict ctx, float dt);
 
 struct SpResultPointer spContextTranslationAlloc();
-sp_error_t spContextTranslationFree(struct SpContextTranslation *restrict man);
-sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict man, sp_body_t body);
-sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restrict man, sp_body_t body);
+sp_error_t spContextTranslationFree(struct SpContextTranslation *restrict ctx);
+sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
+sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
 
 float spBodyGetMass(struct SpContext *restrict ctx, sp_body_t body);
 float spBodyGetPosX(struct SpContext *restrict ctx, sp_body_t body);

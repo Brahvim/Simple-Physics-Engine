@@ -1,12 +1,8 @@
 #include "ifs.h"
 #include "engine/engine.h"
-#include "com_brahvim_physics_Engine.h"
-
-JNIEXPORT void JNICALL Java_com_brahvim_sp_Engine_create(JNIEnv *p_env, jclass p_class) {
-	puts("JVM called `Engine::create()`.");
-
-	// puts("Allocating `SpContextTranslation`.");
-	// struct SpContextTranslation *man = spContextTranslationAlloc().result.value;
-	// spContextTranslationFree(man);
-	// puts("Freeing `SpContextTranslation`.");
-}
+#include "com_brahvim_physics_SimplePhysics.h"
+#include "com_brahvim_physics_SpContext.h"
+#include "com_brahvim_physics_SpContextRotation.h"
+#include "com_brahvim_physics_SpContextTranslation.h"
+#include "com_brahvim_physics_SpSolverParametersRotation.h"
+// #include "com_brahvim_physics_SpContextParametersTranslation.h"

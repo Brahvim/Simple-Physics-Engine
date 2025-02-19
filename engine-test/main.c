@@ -30,9 +30,9 @@ int main(int const p_argCount, char const *const *const p_argValues) {
 	for (size_t i = 0; i < ITR; ++i) {
 
 		spBodyAddAccX(ctx, i, 0.01f);
-		// spSolveRotationVerlet(ctx->manTrans, 0.01f);
-		// spSolveTranslationEuler(ctx->manTrans, 0.01f);
-		spSolveTranslationVerlet(ctx->manTrans, 0.01f);
+		// spSolveRotationVerlet(ctx->ctxTrans, 0.01f);
+		// spSolveTranslationEuler(ctx->ctxTrans, 0.01f);
+		spSolveTranslationVerlet(ctx->ctxTrans, 0.01f);
 
 	}
 
