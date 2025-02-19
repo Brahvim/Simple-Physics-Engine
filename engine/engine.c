@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <memory.h>
 
@@ -62,15 +63,14 @@ void spSolveTranslationVerlet(struct SpContextTranslation *p_ctx, float p_dt) {
 #pragma region `struct SpContext`.
 struct SpResultPointer spContextAlloc() {
 	struct SpContext *ctx = malloc(sizeof(struct SpContext));
-
-	ifu(!ctx) {
-
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx && "Could not be allocated.");
 
 	ctx->masses = calloc(g_spBodyDefaultAllocationCount, sizeof(float));
+	assert(ctx->masses && "Could not be allocated.");
+
 	ctx->ctxTrans = spContextTranslationAlloc().result.value; // NOLINT clang-analyzer.unix.Malloc
+	assert(ctx->masses && "Could not be allocated.");
+
 	ctx->capacityMasses = g_spBodyDefaultAllocationCount;
 	ctx->maxId = 0;
 
@@ -78,13 +78,9 @@ struct SpResultPointer spContextAlloc() {
 }
 
 sp_error_t spContextFree(struct SpContext *restrict p_ctx) {
-	ifu(!p_ctx) {
-
-		return PHYSICS_ERROR_OBJECT_NULL;
-
-	}
-
+	assert(p_ctx && "`NULL`!");
 	spContextTranslationFree(p_ctx->ctxTrans);
+	// spContextRotationFree(p_ctx->ctxRot);
 	free(p_ctx->masses);
 	free(p_ctx);
 
@@ -105,26 +101,8 @@ struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *restrict p_ctx) {
 
 	ifu(p_ctx->maxId >= p_ctx->capacityMasses) {
 
-		// ifu(p_ctx->capacityMasses < 1) {
-		//
-		// 	p_ctx->capacityMasses = g_spBodyDefaultAllocationCount;
-		//
-		// }
-
-		unsigned long long cap = 2 * p_ctx->capacityMasses;
-		float *masses = realloc(p_ctx->masses, cap * sizeof(float));
-
-		ifu(!masses) {
-
-			return (struct SpResultIntegerUnsigned) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-		}
-
-		// "Doin' what `realloc()` don't!":
-		// memset(masses + p_ctx->capacityMasses, 0, sizeof(float) * (cap - p_ctx->capacityMasses));
-
-		p_ctx->masses = masses;
-		p_ctx->capacityMasses = cap;
+		assert(p_ctx->capacityMasses >= 1);
+		p_ctx->masses = realloc(p_ctx->masses, sizeof(float) * (p_ctx->capacityMasses *= 2));
 
 	}
 
@@ -137,40 +115,18 @@ struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *restrict p_ctx) {
 #pragma region `struct SpContextRotation`.
 struct SpResultPointer spContextRotationAlloc() {
 	struct SpContextRotation *ctx = malloc(sizeof(struct SpContextRotation)); // We zero *everything* later...
-	ifu(!ctx) {
-
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx && "Could not be allocated.");
 
 	ctx->active = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	ifu(!ctx->active) {
-
-		free(ctx);
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx->active && "Could not be allocated.");
 
 	ctx->capacityActive = g_spBodyDefaultAllocationCount;
 	ctx->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	ifu(!ctx->inactive) {
-
-		free(ctx->active);
-		free(ctx);
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx->inactive && "Could not be allocated.");
 
 	ctx->capacityInactive = g_spBodyDefaultAllocationCount;
 	ctx->data = calloc(1 + g_spBodyDefaultAllocationCount, sizeof(struct SpSolverParametersRotation));
-	ifu(!ctx->data) {
-
-		free(ctx->active);
-		free(ctx->inactive);
-		free(ctx);
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx->data && "Could not be allocated.");
 
 	// Add new handles to `ctx::inactive`:
 	// for (unsigned long long i = g_spBodyDefaultAllocationCount - 1; i > 0; --i) {
@@ -187,12 +143,7 @@ struct SpResultPointer spContextRotationAlloc() {
 }
 
 sp_error_t spContextRotationFree(struct SpContextRotation *restrict p_ctx) {
-	ifu(!p_ctx) {
-
-		return PHYSICS_ERROR_OBJECT_NULL;
-
-	}
-
+	assert(p_ctx && "`NULL`!");
 	free(p_ctx->inactive);
 	free(p_ctx->active);
 	free(p_ctx->data);
@@ -202,43 +153,17 @@ sp_error_t spContextRotationFree(struct SpContextRotation *restrict p_ctx) {
 }
 
 sp_error_t spContextRotationCreateEntry(struct SpContextRotation *restrict p_ctx, sp_body_t p_body) {
-	ifu(p_ctx->countInactive > 0) { // Grab body from free-list.
+	ifl(p_ctx->countInactive > 0) { // Grab body from free-list.
 
 		p_ctx->countInactive--;
 		p_body = p_ctx->inactive[p_ctx->countInactive];
 
-	}
+	} else ifu(p_ctx->countActive >= p_ctx->capacityActive) {
 
-	ifu(p_ctx->countActive >= p_ctx->capacityActive) {
-
-		// ifu(p_ctx->capacityActive < 1) {
-		//
-		// 	p_ctx->capacityActive = g_spBodyDefaultAllocationCount;
-		//
-		// }
-
-		void *active = realloc(p_ctx->active, 2 * sizeof(unsigned long long) * p_ctx->capacityActive);
-
-		ifu(!active) {
-
-			// spContextRotationFree(p_ctx); // Yep! Free the *whole* ctxager.
-			return PHYSICS_ERROR_OUT_OF_MEMORY;
-
-		}
-
-		p_ctx->active = active;
+		assert(p_ctx->capacityActive >= 1);
+		p_ctx->active = realloc(p_ctx->active, 2 * sizeof(unsigned long long) * p_ctx->capacityActive);
 		p_ctx->capacityActive *= 2;
-
-		void *data = realloc(p_ctx->data, 2 * sizeof(struct SpSolverParametersRotation) * (1 + p_ctx->capacityActive + p_ctx->capacityInactive));
-
-		ifu(!data) {
-
-			// spContextRotationFree(p_ctx); // Yep! Free the *whole* ctxager.
-			return PHYSICS_ERROR_OUT_OF_MEMORY;
-
-		}
-
-		p_ctx->data = data;
+		p_ctx->data = realloc(p_ctx->data, 2 * sizeof(struct SpSolverParametersRotation) * (1 + p_ctx->capacityActive + p_ctx->capacityInactive));
 
 	}
 
@@ -252,23 +177,8 @@ sp_error_t spContextRotationCreateEntry(struct SpContextRotation *restrict p_ctx
 sp_error_t spContextRotationDestroyEntry(struct SpContextRotation *restrict p_ctx, sp_body_t p_body) {
 	ifu(p_ctx->countInactive >= p_ctx->capacityInactive) {
 
-		// ifu(p_ctx->capacityInactive < 1) {
-		//
-		// p_ctx->capacityInactive = g_spBodyDefaultAllocationCount;
-		//
-		// }
-
-		void *inactive = realloc(p_ctx->inactive, 2 * sizeof(unsigned long long) * p_ctx->capacityInactive);
-
-		ifu(!inactive) {
-
-			// spContextRotationFree(p_ctx); // Yep! Free the *whole* ctxager.
-			return PHYSICS_ERROR_OUT_OF_MEMORY;
-
-		}
-
-		p_ctx->inactive = inactive;
-		p_ctx->capacityInactive *= 2;
+		assert(p_ctx->capacityInactive >= 1);
+		p_ctx->inactive = realloc(p_ctx->inactive, sizeof(unsigned long long) * (p_ctx->capacityInactive *= 2));
 
 	}
 
@@ -294,40 +204,18 @@ sp_error_t spContextRotationDestroyEntry(struct SpContextRotation *restrict p_ct
 #pragma region `struct SpContextTranslation`.
 struct SpResultPointer spContextTranslationAlloc() {
 	struct SpContextTranslation *ctx = malloc(sizeof(struct SpContextTranslation)); // We zero *everything* later...
-	ifu(!ctx) {
-
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx && "Could not be allocated.");
 
 	ctx->active = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	ifu(!ctx->active) {
-
-		free(ctx);
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx->active && "Could not be allocated.");
 
 	ctx->capacityActive = g_spBodyDefaultAllocationCount;
 	ctx->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	ifu(!ctx->inactive) {
-
-		free(ctx->active);
-		free(ctx);
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx->inactive && "Could not be allocated.");
 
 	ctx->capacityInactive = g_spBodyDefaultAllocationCount;
 	ctx->data = calloc(1 + g_spBodyDefaultAllocationCount, sizeof(struct SpSolverParametersTranslation));
-	ifu(!ctx->data) {
-
-		free(ctx->active);
-		free(ctx->inactive);
-		free(ctx);
-		return (struct SpResultPointer) { .bad = 1, .result.error = PHYSICS_ERROR_OUT_OF_MEMORY };
-
-	}
+	assert(ctx->data && "Could not be allocated.");
 
 	// Add new handles to `ctx::inactive`:
 	// for (unsigned long long i = g_spBodyDefaultAllocationCount - 1; i > 0; --i) {
@@ -344,12 +232,7 @@ struct SpResultPointer spContextTranslationAlloc() {
 }
 
 sp_error_t spContextTranslationFree(struct SpContextTranslation *restrict p_ctx) {
-	ifu(!p_ctx) {
-
-		return PHYSICS_ERROR_OBJECT_NULL;
-
-	}
-
+	assert(p_ctx && "`NULL`!");
 	free(p_ctx->active);
 	free(p_ctx->inactive);
 	free(p_ctx->data);
@@ -366,34 +249,10 @@ sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict
 
 	} else ifu(p_ctx->countActive >= p_ctx->capacityActive) {
 
-		// ifu(p_ctx->capacityActive < 1) {
-		//
-		// 	p_ctx->capacityActive = g_spBodyDefaultAllocationCount;
-		//
-		// }
-
-		void *active = realloc(p_ctx->active, 2 * sizeof(unsigned long long) * p_ctx->capacityActive);
-
-		ifu(!active) {
-
-			// spContextTranslationFree(p_ctx); // Yep! Free the *whole* ctxager.
-			return PHYSICS_ERROR_OUT_OF_MEMORY;
-
-		}
-
-		p_ctx->active = active;
+		assert(p_ctx->capacityActive >= 1);
+		p_ctx->active = realloc(p_ctx->active, 2 * sizeof(unsigned long long) * p_ctx->capacityActive);
 		p_ctx->capacityActive *= 2;
-
-		void *data = realloc(p_ctx->data, 2 * sizeof(struct SpSolverParametersTranslation) * (1 + p_ctx->capacityActive + p_ctx->capacityInactive));
-
-		ifu(!data) {
-
-			// spContextTranslationFree(p_ctx); // Yep! Free the *whole* ctxager.
-			return PHYSICS_ERROR_OUT_OF_MEMORY;
-
-		}
-
-		p_ctx->data = data;
+		p_ctx->data = realloc(p_ctx->data, 2 * sizeof(struct SpSolverParametersTranslation) * (1 + p_ctx->capacityActive + p_ctx->capacityInactive));
 
 	}
 
@@ -407,23 +266,8 @@ sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict
 sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restrict p_ctx, sp_body_t p_body) {
 	ifu(p_ctx->countInactive >= p_ctx->capacityInactive) {
 
-		// ifu(p_ctx->capacityInactive < 1) {
-		//
-		// 	p_ctx->capacityInactive = g_spBodyDefaultAllocationCount;
-		//
-		// }
-
-		void *inactive = realloc(p_ctx->inactive, 2 * sizeof(unsigned long long) * p_ctx->capacityInactive);
-
-		ifu(!inactive) {
-
-			// spContextTranslationFree(p_ctx); // Yep! Free the *whole* ctxager.
-			return PHYSICS_ERROR_OUT_OF_MEMORY;
-
-		}
-
-		p_ctx->inactive = inactive;
-		p_ctx->capacityInactive *= 2;
+		assert(p_ctx->capacityInactive >= 1);
+		p_ctx->inactive = realloc(p_ctx->inactive, sizeof(unsigned long long) * (p_ctx->capacityInactive *= 2));
 
 	}
 
