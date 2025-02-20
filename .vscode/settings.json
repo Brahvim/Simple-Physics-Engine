@@ -15,16 +15,19 @@
 		"PJAVA"
 	],
 	"files.associations": {
-		"com_brahvim_physics_engine.h": "c",
-		"*.asm": "asm-intel-x86-generic",
 		"*.s": "asm-intel-x86-generic",
+		"*.asm": "asm-intel-x86-generic",
+		"*.luac": "lua",
+		"com_brahvim_physics_engine.h": "c",
 		"string_view": "c",
 		"immintrin.h": "c",
 		"avxintrin.h": "c",
-		"*.luac": "lua",
 		"string": "c",
 		"vector": "c",
 		"array": "c",
+		"glx.h": "c",
+		"glxext.h": "c",
+		"glu.h": "c"
 	},
 	"C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 	"cmake.sourceDirectory": "/home/brahvim/Code/C/SimplePhysicsEngine",

@@ -2,13 +2,27 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
+
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <GLFW/glfw3.h>
 
 #include "ifs.h"
 #include "engine/engine.h"
 
-#define WINDOW_WIDTH  	800
-#define WINDOW_HEIGHT	600
+struct SpContext *g_ctx;
+struct GLFWwindow *g_window;
+unsigned int g_windowWidth = 800;
+unsigned int g_windowHeight = 600;
+
+void cbckGlfwKey(GLFWwindow *const p_window, int const p_key, int const p_scancode, int const p_action, int const p_mods) {
+	if (p_key == GLFW_KEY_ESCAPE) {
+
+		glfwSetWindowShouldClose(g_window, 1);
+
+	}
+}
 
 int main(void) {
 	ifu(!glfwInit()) {
@@ -19,109 +33,101 @@ int main(void) {
 	}
 
 	char const windowTitle[] = "Simple Physics Engine Particles Test";
-	GLFWwindow *const window = glfwCreateWindow(
+	g_window = glfwCreateWindow(
 
-		WINDOW_WIDTH,
-		WINDOW_HEIGHT,
+		g_windowWidth,
+		g_windowHeight,
 		windowTitle,
 		NULL,
 		NULL
 
 	);
 
-	ifu(!window) {
+	ifu(!g_window) {
 
-		perror("GLFW window creation failed!\n");
+		perror("GLFW g_window creation failed!\n");
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 
 	}
 
-	glfwMakeContextCurrent(window);
+	glfwMakeContextCurrent(g_window);
+	glfwSetKeyCallback(g_window, cbckGlfwKey);
+	glViewport(0, 0, g_windowWidth, g_windowHeight);
 
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	// Left, Right, Bottom, Top, Near, Far
-	glOrtho(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
+	glOrtho(0, g_windowWidth, 0, g_windowHeight, -1, 1); // "L, R, Bot, Top, Near, Far"!
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	struct SpContext *ctx = spContextAlloc().result.value;
-
-	srand(time(NULL));
+	g_ctx = spContextAlloc().result.value;
 
 	const int numParticles = 1000;
 	for (int i = 0; i < numParticles; ++i) {
 
-		float const x = rand() % WINDOW_WIDTH;
-		float const y = WINDOW_HEIGHT + (rand() % WINDOW_HEIGHT);
-		sp_body_t const body = spBodyCreate(ctx).result.value;
+		float const x = rand() % g_windowWidth;
+		float const y = g_windowHeight + (rand() % g_windowHeight);
+		sp_body_t const body = spBodyCreate(g_ctx).result.value;
 
-		spBodySetPosition(ctx, body, x, y, 0);
-		spBodySetMass(ctx, body, 2 * sin(i * x / y));
-		// spBodySetMass(ctx, body, 100.0f * (rand() / RAND_MAX));
+		float const weird = 2 * sin(i * x / y);
+		spBodySetMass(g_ctx, body, weird > 0 ? weird : -weird);
+		spBodySetPosition(g_ctx, body, x, y, 0);
 
 	}
 
 	double const timeStart = glfwGetTime();
 	double timeFrameStartPrevious = timeStart;
-	unsigned long long frameCount = 0;
+	size_t frameCount = 1;
 
-	while (!glfwWindowShouldClose(window)) {
+	while (!glfwWindowShouldClose(g_window)) {
 
 		double const timeFrameStartCurrent = glfwGetTime();
 		float const dt = timeFrameStartCurrent - timeFrameStartPrevious;
 		timeFrameStartPrevious = timeFrameStartCurrent;
 
-		char windowTitleBuf[sizeof(windowTitle) + sizeof(" - (1234567890 FPS)")] = { 0 };
-		snprintf(
+		if (frameCount % 30 == 0) {
 
-			windowTitleBuf,
-			sizeof(windowTitleBuf),
-			"%s - (%lf FPS)",
-			windowTitle,
-			10000 * (timeFrameStartCurrent - timeStart) / frameCount
+			printf("%lf FPS.\n", 10000 * (timeFrameStartCurrent - timeStart) / frameCount);
 
-		);
-
-		glfwSetWindowTitle(window, windowTitleBuf);
+		}
 
 		glLoadIdentity();
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		for (unsigned long long i = 0; i < ctx->ctxTrans->countActive; ++i) {
+		for (size_t i = 0; i < g_ctx->ctxTrans->countActive; ++i) {
 
-			sp_body_t const body = ctx->ctxTrans->active[i];
-			spBodyForceCenter(ctx, body, 0, -9.81f, 0);
+			sp_body_t const body = g_ctx->ctxTrans->active[i];
+			spBodyForceCenter(g_ctx, body, 0, -9.81f, 0);
 
 		}
 
-		spSolveTranslationEuler(ctx->ctxTrans, dt);
+		spSolveTranslationEuler(g_ctx->ctxTrans, dt);
 		glPointSize(15.0f);
 		glBegin(GL_POINTS);
-		for (unsigned long long i = 0; i < ctx->ctxTrans->countActive; ++i) {
+		for (size_t i = 0; i < g_ctx->ctxTrans->countActive; ++i) {
 
-			sp_body_t const body = ctx->ctxTrans->active[i];
+			sp_body_t const body = g_ctx->ctxTrans->active[i];
 
-			float const x = spBodyGetPosX(ctx, body);
-			float const y = spBodyGetPosY(ctx, body);
-			float const mass = spBodyGetMass(ctx, body);
+			float const x = spBodyGetPosX(g_ctx, body);
+			float const y = spBodyGetPosY(g_ctx, body);
+			float const mass = spBodyGetMass(g_ctx, body);
 
-			glLoadIdentity();
+			glColor3f(x / g_windowWidth, y / g_windowHeight, mass);
 			glRotatef(15, 0, 0, 1);
-			glColor3f(x / WINDOW_WIDTH, y / WINDOW_HEIGHT, mass);
 			glVertex2f(x, y);
 
 		}
 		glEnd();
 		glfwPollEvents();
-		glfwSwapBuffers(window);
+		glfwSwapBuffers(g_window);
+
 		++frameCount;
 	}
 
-	glfwDestroyWindow(window);
-	spContextFree(ctx);
+	glfwDestroyWindow(g_window);
+	spContextFree(g_ctx);
 	glfwTerminate();
 
 	return 0;
