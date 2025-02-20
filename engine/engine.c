@@ -10,7 +10,7 @@ unsigned long long g_spBodyDefaultAllocationCount = 16;
 
 #pragma region Solvers.
 #pragma region Translation.
-void spSolveTranslationEuler(struct SpContextTranslation *p_ctx, float p_dt) {
+void spSolveTranslationEuler(struct SpContextTranslation *restrict p_ctx, float p_dt) {
 	for (unsigned long long i = 0; i < p_ctx->capacityActive; ++i) {
 
 		struct SpVec3 *pos = &p_ctx->data[i].position;
@@ -30,7 +30,7 @@ void spSolveTranslationEuler(struct SpContextTranslation *p_ctx, float p_dt) {
 	}
 }
 
-void spSolveTranslationVerlet(struct SpContextTranslation *p_ctx, float p_dt) {
+void spSolveTranslationVerlet(struct SpContextTranslation *restrict p_ctx, float p_dt) {
 	for (unsigned long long i = 0; i < p_ctx->capacityActive; ++i) {
 
 		struct SpVec3 *pos = &p_ctx->data[i].position;
@@ -293,7 +293,7 @@ sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restric
 #pragma region Millions of getters, setters, and modifiers.
 #pragma region Getters.
 float spBodyGetMass(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->masses[3 * p_body];
+	return p_ctx->masses[p_body];
 }
 
 float spBodyGetPosX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
@@ -308,7 +308,7 @@ float spBodyGetPosZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return p_ctx->ctxTrans->data[p_body].position.z;
 }
 
-struct SpVec3* spBodyGetPos(struct SpContext *restrict p_ctx, sp_body_t p_body) {
+struct SpVec3* spBodyGetPosition(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return &p_ctx->ctxTrans->data[p_body].position;
 }
 
@@ -324,7 +324,7 @@ float spBodyGetVelZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return p_ctx->ctxTrans->data[p_body].velocity.z;
 }
 
-struct SpVec3* spBodyGetVel(struct SpContext *restrict p_ctx, sp_body_t p_body) {
+struct SpVec3* spBodyGetVelocity(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return &p_ctx->ctxTrans->data[p_body].velocity;
 }
 
@@ -340,20 +340,24 @@ float spBodyGetAccZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return p_ctx->ctxTrans->data[p_body].acceleration.z;
 }
 
-struct SpVec3* spBodyGetAcc(struct SpContext *restrict p_ctx, sp_body_t p_body) {
+struct SpVec3* spBodyGetAcceleration(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return &p_ctx->ctxTrans->data[p_body].acceleration;
 }
 
 float spBodyGetAngX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->ctxRot->data[p_body].angularAcceleration.z;
+	return p_ctx->ctxRot->data[p_body].angles.z;
 }
 
 float spBodyGetAngY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->ctxRot->data[p_body].angularAcceleration.y;
+	return p_ctx->ctxRot->data[p_body].angles.y;
 }
 
 float spBodyGetAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
-	return p_ctx->ctxRot->data[p_body].angularAcceleration.z;
+	return p_ctx->ctxRot->data[p_body].angles.z;
+}
+
+struct SpVec3* spBodyGetAngles(struct SpContext *restrict p_ctx, sp_body_t p_body) {
+	return &p_ctx->ctxRot->data[p_body].angles;
 }
 
 float spBodyGetVelAngX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
@@ -368,6 +372,10 @@ float spBodyGetVelAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return p_ctx->ctxRot->data[p_body].angularVelocity.z;
 }
 
+struct SpVec3* spBodyGetAngularVelocity(struct SpContext *restrict p_ctx, sp_body_t p_body) {
+	return &p_ctx->ctxRot->data[p_body].angularVelocity;
+}
+
 float spBodyGetAccAngX(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return p_ctx->ctxRot->data[p_body].angularAcceleration.x;
 }
@@ -379,11 +387,15 @@ float spBodyGetAccAngY(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 float spBodyGetAccAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	return p_ctx->ctxRot->data[p_body].angularAcceleration.z;
 }
+
+struct SpVec3* spBodyGetAngularAcceleration(struct SpContext *restrict p_ctx, sp_body_t p_body) {
+	return &p_ctx->ctxRot->data[p_body].angularAcceleration;
+}
 #pragma endregion
 
 #pragma region Setters.
 void spBodySetMass(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->masses[3 * p_body] = p_value;
+	p_ctx->masses[p_body] = p_value;
 }
 
 void spBodySetPosX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
@@ -441,21 +453,21 @@ void spBodySetAcceleration(struct SpContext *restrict p_ctx, sp_body_t p_body, f
 }
 
 void spBodySetAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->ctxRot->data[p_body].angularAcceleration.z = p_value;
+	p_ctx->ctxRot->data[p_body].angles.z = p_value;
 }
 
 void spBodySetAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->ctxRot->data[p_body].angularAcceleration.y = p_value;
+	p_ctx->ctxRot->data[p_body].angles.y = p_value;
 }
 
 void spBodySetAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->ctxRot->data[p_body].angularAcceleration.z = p_value;
+	p_ctx->ctxRot->data[p_body].angles.z = p_value;
 }
 
 void spBodySetAngles(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
-	p_ctx->ctxRot->data[p_body].angularAcceleration.x = p_x;
-	p_ctx->ctxRot->data[p_body].angularAcceleration.y = p_y;
-	p_ctx->ctxRot->data[p_body].angularAcceleration.z = p_z;
+	p_ctx->ctxRot->data[p_body].angles.x = p_x;
+	p_ctx->ctxRot->data[p_body].angles.y = p_y;
+	p_ctx->ctxRot->data[p_body].angles.z = p_z;
 }
 
 void spBodySetVelAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
@@ -497,7 +509,7 @@ void spBodySetAccelerationAngular(struct SpContext *restrict p_ctx, sp_body_t p_
 
 #pragma region Modifiers.
 void spBodyAddMass(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->masses[3 * p_body] += p_value;
+	p_ctx->masses[p_body] += p_value;
 }
 
 void spBodyAddPosX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
@@ -555,11 +567,57 @@ void spBodyAddAcceleration(struct SpContext *restrict p_ctx, sp_body_t p_body, f
 }
 
 void spBodyAddAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
-	p_ctx->ctxRot->data[p_body].angularAcceleration.z += p_value;
+	p_ctx->ctxRot->data[p_body].angles.z += p_value;
 }
 
 void spBodyAddAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
+	p_ctx->ctxRot->data[p_body].angles.y += p_value;
+}
+
+void spBodyAddAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
+	p_ctx->ctxRot->data[p_body].angles.z += p_value;
+}
+
+void spBodyAddAngles(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
+	p_ctx->ctxRot->data[p_body].angles.x += p_x;
+	p_ctx->ctxRot->data[p_body].angles.y += p_y;
+	p_ctx->ctxRot->data[p_body].angles.z += p_z;
+}
+
+void spBodyAddVelAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
+	p_ctx->ctxRot->data[p_body].angularVelocity.z += p_value;
+}
+
+void spBodyAddVelAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
+	p_ctx->ctxRot->data[p_body].angularVelocity.y += p_value;
+}
+
+void spBodyAddVelAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
+	p_ctx->ctxRot->data[p_body].angularVelocity.z += p_value;
+}
+
+void spBodyAddVelocityAngular(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
+	p_ctx->ctxRot->data[p_body].angularVelocity.x += p_x;
+	p_ctx->ctxRot->data[p_body].angularVelocity.y += p_y;
+	p_ctx->ctxRot->data[p_body].angularVelocity.z += p_z;
+}
+
+void spBodyAddAccAngX(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
+	p_ctx->ctxRot->data[p_body].angularAcceleration.z += p_value;
+}
+
+void spBodyAddAccAngY(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
 	p_ctx->ctxRot->data[p_body].angularAcceleration.y += p_value;
+}
+
+void spBodyAddAccAngZ(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_value) {
+	p_ctx->ctxRot->data[p_body].angularAcceleration.z += p_value;
+}
+
+void spBodyAddAccelerationAngular(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_x, float p_y, float p_z) {
+	p_ctx->ctxRot->data[p_body].angularAcceleration.x += p_x;
+	p_ctx->ctxRot->data[p_body].angularAcceleration.y += p_y;
+	p_ctx->ctxRot->data[p_body].angularAcceleration.z += p_z;
 }
 
 void spBodyForceCenter(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_fx, float p_fy, float p_fz) {
@@ -581,7 +639,7 @@ void spBodyForce(struct SpContext *restrict p_ctx, sp_body_t p_body, float p_fx,
 	float const torqueY = p_fz * diffX - diffZ * p_fx;
 	float const torqueZ = p_fx * diffY - diffX * p_fy;
 
-	// Replace *mass* with *moment of inertia!:*
+	// Replace *mass* with *moment of inertia! SOMEDAY!:*
 	p_ctx->ctxRot->data[p_body].angularAcceleration.x += torqueX / mass;
 	p_ctx->ctxRot->data[p_body].angularAcceleration.y += torqueY / mass;
 	p_ctx->ctxRot->data[p_body].angularAcceleration.z += torqueZ / mass;
