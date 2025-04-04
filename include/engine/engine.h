@@ -1,12 +1,7 @@
 #pragma once
 
+typedef unsigned long long sp_size_t;
 typedef unsigned long long sp_body_t;
-typedef unsigned long long sp_error_t;
-
-#define PHYSICS_ERROR_NONE 					1 << 0
-#define PHYSICS_ERROR_OBJECT_NULL			1 << 1
-#define PHYSICS_ERROR_OBJECT_ABSENT			1 << 2
-#define PHYSICS_ERROR_OUT_OF_MEMORY			1 << 4
 
 extern unsigned long long g_spBodyDefaultAllocationCount;
 
@@ -76,75 +71,19 @@ struct SpContext {
 
 };
 
-struct SpResultFloat {
-
-	char bad;
-
-	union SpUnionErrorFloat {
-
-		float value;
-		sp_error_t error;
-
-	} result;
-
-
-};
-
-struct SpResultPointer {
-
-	char bad;
-
-	union SpUnionErrorPointer {
-
-		void *value;
-		sp_error_t error;
-
-	} result;
-
-
-};
-
-struct SpResultIntegerSigned {
-
-	char bad;
-
-	union SpUnionErrorIntegerSigned {
-
-		sp_error_t error;
-		signed long long value;
-
-	} result;
-
-
-};
-
-struct SpResultIntegerUnsigned {
-
-	char bad;
-
-	union SpUnionErrorUll {
-
-		sp_error_t error;
-		unsigned long long value;
-
-	} result;
-
-
-};
-
-struct SpResultPointer spContextAlloc();
-sp_error_t spContextFree(struct SpContext *restrict ctx);
-sp_error_t spBodyDestroy(struct SpContext *restrict ctx, sp_body_t body);
-struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *restrict ctx);
+struct SpContext* spContextAlloc();
+void spContextFree(struct SpContext *restrict ctx);
+sp_body_t spBodyCreate(struct SpContext *restrict ctx);
+void spBodyDestroy(struct SpContext *restrict ctx, sp_body_t body);
 
 // void spSolveRotationEuler(struct SpContextTranslation *restrict ctx, float dt);
 void spSolveTranslationEuler(struct SpContextTranslation *restrict ctx, float dt);
 void spSolveTranslationVerlet(struct SpContextTranslation *restrict ctx, float dt);
 
-struct SpResultPointer spContextTranslationAlloc();
-sp_error_t spContextTranslationFree(struct SpContextTranslation *restrict ctx);
-sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
-sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
+struct SpContextTranslation* spContextTranslationAlloc();
+void spContextTranslationFree(struct SpContextTranslation *restrict ctx);
+void spContextTranslationCreateEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
+void spContextTranslationDestroyEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
 
 float spBodyGetMass(struct SpContext *restrict ctx, sp_body_t body);
 float spBodyGetPosX(struct SpContext *restrict ctx, sp_body_t body);

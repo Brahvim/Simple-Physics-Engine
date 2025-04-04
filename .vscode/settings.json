@@ -27,7 +27,9 @@
 		"array": "c",
 		"glx.h": "c",
 		"glxext.h": "c",
-		"glu.h": "c"
+		"glu.h": "c",
+		"iomanip": "c",
+		"locale": "c"
 	},
 	"C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 	"cmake.sourceDirectory": "/home/brahvim/Code/C/SimplePhysicsEngine",

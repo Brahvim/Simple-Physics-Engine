@@ -1,17 +1,16 @@
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <memory.h>
 
 #include "ifs.h"
 #include "engine/engine.h"
 
-unsigned long long g_spBodyDefaultAllocationCount = 16;
+sp_size_t g_spBodyDefaultAllocationCount = 16;
 
 #pragma region Solvers.
 #pragma region Translation.
 void spSolveTranslationEuler(struct SpContextTranslation *restrict p_ctx, float p_dt) {
-	for (unsigned long long i = 0; i < p_ctx->capacityActive; ++i) {
+	for (sp_size_t i = 0; i < p_ctx->capacityActive; ++i) {
 
 		struct SpVec3 *pos = &p_ctx->data[i].position;
 		struct SpVec3 *vel = &p_ctx->data[i].velocity;
@@ -31,7 +30,7 @@ void spSolveTranslationEuler(struct SpContextTranslation *restrict p_ctx, float 
 }
 
 void spSolveTranslationVerlet(struct SpContextTranslation *restrict p_ctx, float p_dt) {
-	for (unsigned long long i = 0; i < p_ctx->capacityActive; ++i) {
+	for (sp_size_t i = 0; i < p_ctx->capacityActive; ++i) {
 
 		struct SpVec3 *pos = &p_ctx->data[i].position;
 		struct SpVec3 *vel = &p_ctx->data[i].velocity;
@@ -61,76 +60,63 @@ void spSolveTranslationVerlet(struct SpContextTranslation *restrict p_ctx, float
 #pragma endregion
 
 #pragma region `struct SpContext`.
-struct SpResultPointer spContextAlloc() {
+struct SpContext* spContextAlloc() {
 	struct SpContext *ctx = malloc(sizeof(struct SpContext));
-	assert(ctx && "Could not be allocated.");
 
 	ctx->masses = calloc(g_spBodyDefaultAllocationCount, sizeof(float));
-	assert(ctx->masses && "Could not be allocated.");
-
-	ctx->ctxTrans = spContextTranslationAlloc().result.value; // NOLINT clang-analyzer.unix.Malloc
-	assert(ctx->masses && "Could not be allocated.");
+	ctx->ctxTrans = spContextTranslationAlloc(); // NOLINT clang-analyzer.unix.Malloc
 
 	ctx->capacityMasses = g_spBodyDefaultAllocationCount;
 	ctx->maxId = 0;
 
-	return (struct SpResultPointer) { .bad = 0, .result.value = ctx };
+	return ctx;
 }
 
-sp_error_t spContextFree(struct SpContext *restrict p_ctx) {
-	assert(p_ctx && "`NULL`!");
+void spContextFree(struct SpContext *restrict p_ctx) {
 	spContextTranslationFree(p_ctx->ctxTrans);
 	// spContextRotationFree(p_ctx->ctxRot);
 	free(p_ctx->masses);
 	free(p_ctx);
-
-	return PHYSICS_ERROR_NONE;
 }
 #pragma endregion
 
 #pragma region Bodies!
-sp_error_t spBodyDestroy(struct SpContext *restrict p_ctx, sp_body_t p_body) {
+void spBodyDestroy(struct SpContext *restrict p_ctx, sp_body_t p_body) {
 	spContextTranslationDestroyEntry(p_ctx->ctxTrans, p_body);
-	return PHYSICS_ERROR_NONE;
 }
 
-struct SpResultIntegerUnsigned spBodyCreate(struct SpContext *restrict p_ctx) {
+sp_body_t spBodyCreate(struct SpContext *restrict p_ctx) {
 	sp_body_t const id = p_ctx->maxId;
 
 	spContextTranslationCreateEntry(p_ctx->ctxTrans, id);
 
 	ifu(p_ctx->maxId >= p_ctx->capacityMasses) {
 
-		assert(p_ctx->capacityMasses >= 1);
 		p_ctx->masses = realloc(p_ctx->masses, sizeof(float) * (p_ctx->capacityMasses *= 2));
 
 	}
 
 	p_ctx->maxId++;
 	p_ctx->masses[id] = 0;
-	return (struct SpResultIntegerUnsigned) { .bad = 0, .result.value = id };
+	return id;
 }
 #pragma endregion
 
 #pragma region `struct SpContextRotation`.
-struct SpResultPointer spContextRotationAlloc() {
+struct SpContextRotation* spContextRotationAlloc() {
 	struct SpContextRotation *ctx = malloc(sizeof(struct SpContextRotation)); // We zero *everything* later...
-	assert(ctx && "Could not be allocated.");
 
-	ctx->active = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	assert(ctx->active && "Could not be allocated.");
+	ctx->active = calloc(g_spBodyDefaultAllocationCount, sizeof(sp_size_t));
 
 	ctx->capacityActive = g_spBodyDefaultAllocationCount;
-	ctx->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	assert(ctx->inactive && "Could not be allocated.");
+	ctx->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(sp_size_t));
 
 	ctx->capacityInactive = g_spBodyDefaultAllocationCount;
 	ctx->data = calloc(1 + g_spBodyDefaultAllocationCount, sizeof(struct SpSolverParametersRotation));
-	assert(ctx->data && "Could not be allocated.");
 
 	// Add new handles to `ctx::inactive`:
-	// for (unsigned long long i = g_spBodyDefaultAllocationCount - 1; i > 0; --i) {
-	for (unsigned long long i = 0; i < g_spBodyDefaultAllocationCount; ++i) {
+	// for (sp_size_t i = g_spBodyDefaultAllocationCount - 1; i > 0; --i) {
+	for (sp_size_t i = 0; i < g_spBodyDefaultAllocationCount; ++i) {
 
 		ctx->inactive[i] = i;
 
@@ -139,20 +125,17 @@ struct SpResultPointer spContextRotationAlloc() {
 	ctx->countInactive = g_spBodyDefaultAllocationCount;
 	ctx->countActive = 0;
 
-	return (struct SpResultPointer) { .bad = 0, .result.value = ctx };
+	return ctx;
 }
 
-sp_error_t spContextRotationFree(struct SpContextRotation *restrict p_ctx) {
-	assert(p_ctx && "`NULL`!");
+void spContextRotationFree(struct SpContextRotation *restrict p_ctx) {
 	free(p_ctx->inactive);
 	free(p_ctx->active);
 	free(p_ctx->data);
 	free(p_ctx);
-
-	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spContextRotationCreateEntry(struct SpContextRotation *restrict p_ctx, sp_body_t p_body) {
+void spContextRotationCreateEntry(struct SpContextRotation *restrict p_ctx, sp_body_t p_body) {
 	ifl(p_ctx->countInactive > 0) { // Grab body from free-list.
 
 		p_ctx->countInactive--;
@@ -160,8 +143,7 @@ sp_error_t spContextRotationCreateEntry(struct SpContextRotation *restrict p_ctx
 
 	} else ifu(p_ctx->countActive >= p_ctx->capacityActive) {
 
-		assert(p_ctx->capacityActive >= 1);
-		p_ctx->active = realloc(p_ctx->active, 2 * sizeof(unsigned long long) * p_ctx->capacityActive);
+		p_ctx->active = realloc(p_ctx->active, 2 * sizeof(sp_size_t) * p_ctx->capacityActive);
 		p_ctx->capacityActive *= 2;
 		p_ctx->data = realloc(p_ctx->data, 2 * sizeof(struct SpSolverParametersRotation) * (1 + p_ctx->capacityActive + p_ctx->capacityInactive));
 
@@ -170,19 +152,16 @@ sp_error_t spContextRotationCreateEntry(struct SpContextRotation *restrict p_ctx
 	memset(&p_ctx->data[p_body], 0, sizeof(struct SpSolverParametersRotation)); // NOLINT clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
 	p_ctx->active[p_ctx->countActive] = p_body;
 	p_ctx->countActive++;
-
-	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spContextRotationDestroyEntry(struct SpContextRotation *restrict p_ctx, sp_body_t p_body) {
+void spContextRotationDestroyEntry(struct SpContextRotation *restrict p_ctx, sp_body_t p_body) {
 	ifu(p_ctx->countInactive >= p_ctx->capacityInactive) {
 
-		assert(p_ctx->capacityInactive >= 1);
-		p_ctx->inactive = realloc(p_ctx->inactive, sizeof(unsigned long long) * (p_ctx->capacityInactive *= 2));
+		p_ctx->inactive = realloc(p_ctx->inactive, sizeof(sp_size_t) * (p_ctx->capacityInactive *= 2));
 
 	}
 
-	for (unsigned long long i = 0; i < p_ctx->countActive; ++i) {
+	for (sp_size_t i = 0; i < p_ctx->countActive; ++i) {
 
 		ifu(p_ctx->active[i] == p_body) {
 
@@ -191,35 +170,29 @@ sp_error_t spContextRotationDestroyEntry(struct SpContextRotation *restrict p_ct
 			p_ctx->inactive[p_ctx->countInactive] = p_body;
 			p_ctx->countInactive++;
 
-			return PHYSICS_ERROR_NONE;
+			return;
 
 		}
 
 	}
-
-	return PHYSICS_ERROR_OBJECT_ABSENT;
 }
 #pragma endregion
 
 #pragma region `struct SpContextTranslation`.
-struct SpResultPointer spContextTranslationAlloc() {
+struct SpContextTranslation* spContextTranslationAlloc() {
 	struct SpContextTranslation *ctx = malloc(sizeof(struct SpContextTranslation)); // We zero *everything* later...
-	assert(ctx && "Could not be allocated.");
 
-	ctx->active = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	assert(ctx->active && "Could not be allocated.");
+	ctx->active = calloc(g_spBodyDefaultAllocationCount, sizeof(sp_size_t));
 
 	ctx->capacityActive = g_spBodyDefaultAllocationCount;
-	ctx->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(unsigned long long));
-	assert(ctx->inactive && "Could not be allocated.");
+	ctx->inactive = calloc(g_spBodyDefaultAllocationCount, sizeof(sp_size_t));
 
 	ctx->capacityInactive = g_spBodyDefaultAllocationCount;
 	ctx->data = calloc(1 + g_spBodyDefaultAllocationCount, sizeof(struct SpSolverParametersTranslation));
-	assert(ctx->data && "Could not be allocated.");
 
 	// Add new handles to `ctx::inactive`:
-	// for (unsigned long long i = g_spBodyDefaultAllocationCount - 1; i > 0; --i) {
-	for (unsigned long long i = 0; i < g_spBodyDefaultAllocationCount; ++i) {
+	// for (sp_size_t i = g_spBodyDefaultAllocationCount - 1; i > 0; --i) {
+	for (sp_size_t i = 0; i < g_spBodyDefaultAllocationCount; ++i) {
 
 		ctx->inactive[i] = i;
 
@@ -228,20 +201,17 @@ struct SpResultPointer spContextTranslationAlloc() {
 	ctx->countInactive = g_spBodyDefaultAllocationCount;
 	ctx->countActive = 0;
 
-	return (struct SpResultPointer) { .bad = 0, .result.value = ctx };
+	return ctx;
 }
 
-sp_error_t spContextTranslationFree(struct SpContextTranslation *restrict p_ctx) {
-	assert(p_ctx && "`NULL`!");
+void spContextTranslationFree(struct SpContextTranslation *restrict p_ctx) {
 	free(p_ctx->active);
 	free(p_ctx->inactive);
 	free(p_ctx->data);
 	free(p_ctx);
-
-	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict p_ctx, sp_body_t p_body) {
+void spContextTranslationCreateEntry(struct SpContextTranslation *restrict p_ctx, sp_body_t p_body) {
 	ifl(p_ctx->countInactive > 0) { // Grab body from free-list.
 
 		p_ctx->countInactive--;
@@ -249,8 +219,7 @@ sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict
 
 	} else ifu(p_ctx->countActive >= p_ctx->capacityActive) {
 
-		assert(p_ctx->capacityActive >= 1);
-		p_ctx->active = realloc(p_ctx->active, 2 * sizeof(unsigned long long) * p_ctx->capacityActive);
+		p_ctx->active = realloc(p_ctx->active, 2 * sizeof(sp_size_t) * p_ctx->capacityActive);
 		p_ctx->capacityActive *= 2;
 		p_ctx->data = realloc(p_ctx->data, 2 * sizeof(struct SpSolverParametersTranslation) * (1 + p_ctx->capacityActive + p_ctx->capacityInactive));
 
@@ -259,19 +228,16 @@ sp_error_t spContextTranslationCreateEntry(struct SpContextTranslation *restrict
 	memset(&p_ctx->data[p_body], 0, sizeof(struct SpSolverParametersTranslation)); // NOLINT clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
 	p_ctx->active[p_ctx->countActive] = p_body;
 	p_ctx->countActive++;
-
-	return PHYSICS_ERROR_NONE;
 }
 
-sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restrict p_ctx, sp_body_t p_body) {
+void spContextTranslationDestroyEntry(struct SpContextTranslation *restrict p_ctx, sp_body_t p_body) {
 	ifu(p_ctx->countInactive >= p_ctx->capacityInactive) {
 
-		assert(p_ctx->capacityInactive >= 1);
-		p_ctx->inactive = realloc(p_ctx->inactive, sizeof(unsigned long long) * (p_ctx->capacityInactive *= 2));
+		p_ctx->inactive = realloc(p_ctx->inactive, sizeof(sp_size_t) * (p_ctx->capacityInactive *= 2));
 
 	}
 
-	for (unsigned long long i = 0; i < p_ctx->countActive; ++i) {
+	for (sp_size_t i = 0; i < p_ctx->countActive; ++i) {
 
 		ifu(p_ctx->active[i] == p_body) {
 
@@ -280,13 +246,11 @@ sp_error_t spContextTranslationDestroyEntry(struct SpContextTranslation *restric
 			p_ctx->inactive[p_ctx->countInactive] = p_body;
 			p_ctx->countInactive++;
 
-			return PHYSICS_ERROR_NONE;
+			return;
 
 		}
 
 	}
-
-	return PHYSICS_ERROR_OBJECT_ABSENT;
 }
 #pragma endregion
 
