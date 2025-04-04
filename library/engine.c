@@ -3,7 +3,7 @@
 #include <memory.h>
 
 #include "ifs.h"
-#include "engine/engine.h"
+#include "library/sp.h"
 
 sp_size_t g_spBodyDefaultAllocationCount = 16;
 

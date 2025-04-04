@@ -9,7 +9,7 @@
 #include <GLFW/glfw3.h>
 
 #include "ifs.h"
-#include "engine/engine.h"
+#include "library/sp.h"
 
 char g_reset = 0;
 int g_windowX = 0;

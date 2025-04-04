@@ -8,5 +8,5 @@ find_package(glfw3 REQUIRED)
 add_executable(SimplePhysicsEngineTest "main.c")
 
 target_link_libraries(
-  SimplePhysicsEngineTest PRIVATE SimplePhysicsEngine m OpenGL::GL
+  SimplePhysicsEngineTest PRIVATE SimplePhysicsEngineLibrary m OpenGL::GL
                                   /usr/lib/x86_64-linux-gnu/libglfw.so)

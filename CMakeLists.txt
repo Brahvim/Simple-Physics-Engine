@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(PortedSimplePhysicsEngine)
+project(SimplePhysicsEngine)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(CMAKE_C_FLAGS
     #
@@ -38,5 +38,5 @@ set(CMAKE_C_FLAGS
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-add_subdirectory("engine")
-add_subdirectory("engine-test")
+add_subdirectory("library")
+add_subdirectory("test")
