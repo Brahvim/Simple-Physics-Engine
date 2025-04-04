@@ -1,8 +1,0 @@
-#include "ifs.h"
-#include "engine/engine.h"
-#include "com_brahvim_physics_SimplePhysics.h"
-#include "com_brahvim_physics_SpContext.h"
-#include "com_brahvim_physics_SpContextRotation.h"
-#include "com_brahvim_physics_SpContextTranslation.h"
-#include "com_brahvim_physics_SpSolverParametersRotation.h"
-// #include "com_brahvim_physics_SpContextParametersTranslation.h"
