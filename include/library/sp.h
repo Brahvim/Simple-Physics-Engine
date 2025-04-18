@@ -72,112 +72,112 @@ struct SpContext {
 };
 
 struct SpContext* spContextAlloc();
-void spContextFree(struct SpContext *restrict ctx);
-sp_body_t spBodyCreate(struct SpContext *restrict ctx);
-void spBodyDestroy(struct SpContext *restrict ctx, sp_body_t body);
+void spContextFree(struct SpContext *const restrict ctx);
+sp_body_t spBodyCreate(struct SpContext *const restrict ctx);
+void spBodyDestroy(struct SpContext *const restrict ctx, sp_body_t const body);
 
-// void spSolveRotationEuler(struct SpContextTranslation *restrict ctx, float dt);
-void spSolveTranslationEuler(struct SpContextTranslation *restrict ctx, float dt);
-void spSolveTranslationVerlet(struct SpContextTranslation *restrict ctx, float dt);
+// void spSolveRotationEuler(struct SpContextTranslation *const restrict ctx, float dt);
+void spSolveTranslationEuler(struct SpContextTranslation *const restrict ctx, float dt);
+void spSolveTranslationVerlet(struct SpContextTranslation *const restrict ctx, float dt);
 
 struct SpContextTranslation* spContextTranslationAlloc();
-void spContextTranslationFree(struct SpContextTranslation *restrict ctx);
-void spContextTranslationCreateEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
-void spContextTranslationDestroyEntry(struct SpContextTranslation *restrict ctx, sp_body_t body);
+void spContextTranslationFree(struct SpContextTranslation *const restrict ctx);
+void spContextTranslationCreateEntry(struct SpContextTranslation *const restrict ctx, sp_body_t const body);
+void spContextTranslationDestroyEntry(struct SpContextTranslation *const restrict ctx, sp_body_t const body);
 
-float spBodyGetMass(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetPosX(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetPosY(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetPosZ(struct SpContext *restrict ctx, sp_body_t body);
-struct SpVec3* spBodyGetPosition(struct SpContext *restrict ctx, sp_body_t body);
+float spBodyGetMass(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetPosX(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetPosY(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetPosZ(struct SpContext *const restrict ctx, sp_body_t const body);
+struct SpVec3* spBodyGetPosition(struct SpContext *const restrict ctx, sp_body_t const body);
 
-float spBodyGetVelX(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetVelY(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetVelZ(struct SpContext *restrict ctx, sp_body_t body);
-struct SpVec3* spBodyGetVelocity(struct SpContext *restrict ctx, sp_body_t body);
+float spBodyGetVelX(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetVelY(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetVelZ(struct SpContext *const restrict ctx, sp_body_t const body);
+struct SpVec3* spBodyGetVelocity(struct SpContext *const restrict ctx, sp_body_t const body);
 
-float spBodyGetAccX(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetAccY(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetAccZ(struct SpContext *restrict ctx, sp_body_t body);
-struct SpVec3* spBodyGetAcceleration(struct SpContext *restrict ctx, sp_body_t body);
+float spBodyGetAccX(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetAccY(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetAccZ(struct SpContext *const restrict ctx, sp_body_t const body);
+struct SpVec3* spBodyGetAcceleration(struct SpContext *const restrict ctx, sp_body_t const body);
 
-float spBodyGetAngX(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetAngY(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetAngZ(struct SpContext *restrict ctx, sp_body_t body);
-struct SpVec3* spBodyGetAngles(struct SpContext *restrict ctx, sp_body_t body);
+float spBodyGetAngX(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetAngY(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetAngZ(struct SpContext *const restrict ctx, sp_body_t const body);
+struct SpVec3* spBodyGetAngles(struct SpContext *const restrict ctx, sp_body_t const body);
 
-float spBodyGetVelAngX(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetVelAngY(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetVelAngZ(struct SpContext *restrict ctx, sp_body_t body);
-struct SpVec3* spBodyGetAngularVelocity(struct SpContext *restrict ctx, sp_body_t body);
+float spBodyGetVelAngX(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetVelAngY(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetVelAngZ(struct SpContext *const restrict ctx, sp_body_t const body);
+struct SpVec3* spBodyGetAngularVelocity(struct SpContext *const restrict ctx, sp_body_t const body);
 
-float spBodyGetAccAngX(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetAccAngY(struct SpContext *restrict ctx, sp_body_t body);
-float spBodyGetAccAngZ(struct SpContext *restrict ctx, sp_body_t body);
-struct SpVec3* spBodyGetAngularAcceleration(struct SpContext *restrict ctx, sp_body_t body);
+float spBodyGetAccAngX(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetAccAngY(struct SpContext *const restrict ctx, sp_body_t const body);
+float spBodyGetAccAngZ(struct SpContext *const restrict ctx, sp_body_t const body);
+struct SpVec3* spBodyGetAngularAcceleration(struct SpContext *const restrict ctx, sp_body_t const body);
 
-void spBodySetMass(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetPosX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetPosY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetPosZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetPosition(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodySetMass(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetPosX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetPosY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetPosZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetPosition(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodySetVelX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetVelY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetVelZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetVelocity(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodySetVelX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetVelY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetVelZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetVelocity(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodySetAccX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAccY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAccZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAcceleration(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodySetAccX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAccY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAccZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAcceleration(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodySetAngX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAngY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAngZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAngles(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodySetAngX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAngY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAngZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAngles(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodySetVelAngX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetVelAngY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetVelAngZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetVelocityAngular(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodySetVelAngX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetVelAngY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetVelAngZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetVelocityAngular(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodySetAccAngX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAccAngY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAccAngZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodySetAccelerationAngular(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodySetAccAngX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAccAngY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAccAngZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodySetAccelerationAngular(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodyAddMass(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddPosX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddPosY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddPosZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddPosition(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodyAddMass(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddPosX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddPosY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddPosZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddPosition(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodyAddVelX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddVelY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddVelZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddVelocity(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodyAddVelX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddVelY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddVelZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddVelocity(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodyAddAccX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAccY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAccZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAcceleration(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodyAddAccX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAccY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAccZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAcceleration(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodyAddAngX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAngY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAngZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAngles(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodyAddAngX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAngY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAngZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAngles(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodyAddVelAngX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddVelAngY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddVelAngZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddVelocityAngular(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodyAddVelAngX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddVelAngY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddVelAngZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddVelocityAngular(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodyAddAccAngX(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAccAngY(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAccAngZ(struct SpContext *restrict ctx, sp_body_t body, float value);
-void spBodyAddAccelerationAngular(struct SpContext *restrict ctx, sp_body_t body, float x, float y, float z);
+void spBodyAddAccAngX(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAccAngY(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAccAngZ(struct SpContext *const restrict ctx, sp_body_t const body, float value);
+void spBodyAddAccelerationAngular(struct SpContext *const restrict ctx, sp_body_t const body, float x, float y, float z);
 
-void spBodyForceCenter(struct SpContext *restrict ctx, sp_body_t body, float forceX, float force, float forceZ);
+void spBodyForceCenter(struct SpContext *const restrict ctx, sp_body_t const body, float forceX, float force, float forceZ);
 
-void spBodyForce(struct SpContext *restrict ctx, sp_body_t body, float forceX, float force, float forceZ, float positionX, float positionY, float positionZ);
+void spBodyForce(struct SpContext *const restrict ctx, sp_body_t const body, float forceX, float force, float forceZ, float positionX, float positionY, float positionZ);
